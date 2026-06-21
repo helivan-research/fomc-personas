@@ -57,8 +57,11 @@ def _user_prompt(question: str, retrieved: list[str], briefing: str | None = Non
 
 
 def _clean(text: str) -> str:
-    """Collapse whitespace; gpt-4o-mini returns the answer directly (no delimiters needed)."""
-    return re.sub(r"\s+", " ", text).strip() if text else ""
+    """Collapse whitespace and strip any wrapping quotes the model adds (e.g. when asked to continue
+    a quoted statement); gpt-4o-mini returns the answer directly (no delimiters needed)."""
+    if not text:
+        return ""
+    return re.sub(r"\s+", " ", text).strip().strip("\"“”").strip()
 
 
 def generate(messages, model: str = GEN_MODEL, max_tokens: int = 90, workers: int = 12):
