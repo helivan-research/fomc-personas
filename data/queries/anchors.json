@@ -1,0 +1,16 @@
+{
+  "hawk": [
+    "Inflation is too high and we must raise interest rates decisively to restore price stability.",
+    "The risk of entrenched inflation outweighs concerns about slowing growth; policy should stay restrictive.",
+    "We should tighten monetary policy and shrink the balance sheet to combat inflationary pressures.",
+    "Premature easing would be a serious mistake; we must keep rates higher for longer.",
+    "Maintaining credibility on inflation requires a firm, hawkish stance even at the cost of some employment."
+  ],
+  "dove": [
+    "We should cut interest rates to support employment and economic growth.",
+    "The labor market needs support; the risk of overtightening into a recession is significant.",
+    "With inflation falling we can afford to ease policy to protect jobs.",
+    "Accommodative monetary policy is warranted to sustain the recovery and maximize employment.",
+    "The greater danger now is doing too much and weakening the economy, so policy should be more dovish."
+  ]
+}

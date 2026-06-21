@@ -1,0 +1,434 @@
+[
+  {
+    "q": "Do you believe that prioritizing price stability is more important than achieving maximum employment in current U.S. monetary policy?",
+    "subtopic": "priority of price stability versus maximum employment",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that maintaining a low federal funds rate is necessary to support maximum employment even if it risks higher inflation?",
+    "subtopic": "priority of price stability versus maximum employment",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that the Federal Reserve should take preemptive action against inflation even if it means raising interest rates before unemployment reaches its lowest point?",
+    "subtopic": "priority of price stability versus maximum employment",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that a focus on maximum employment should allow for a more flexible approach to inflation targets in monetary policy?",
+    "subtopic": "priority of price stability versus maximum employment",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that the increasing risk of persistent inflation justifies a hawkish stance, even if it may slow down job growth in the short term?",
+    "subtopic": "priority of price stability versus maximum employment",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that the current labor market conditions require a dovish approach to ensure sustainable economic growth and employment gains?",
+    "subtopic": "priority of price stability versus maximum employment",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that allowing inflation to exceed the 2 percent target can stimulate economic growth in the short term?",
+    "subtopic": "tolerance for inflation above the 2 percent target",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that maintaining a strict 2 percent inflation target is crucial for long-term price stability?",
+    "subtopic": "tolerance for inflation above the 2 percent target",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that current economic conditions justify a temporary allowance for higher inflation than the target rate?",
+    "subtopic": "tolerance for inflation above the 2 percent target",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that a higher inflation tolerance could enhance public confidence and spending in the economy?",
+    "subtopic": "tolerance for inflation above the 2 percent target",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that the risks of allowing inflation to run above 2 percent outweigh the potential benefits?",
+    "subtopic": "tolerance for inflation above the 2 percent target",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that persistent above-target inflation could undermine the Federal Reserve's credibility over time?",
+    "subtopic": "tolerance for inflation above the 2 percent target",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that targeting a lower inflation rate can justify a temporary increase in the unemployment rate?",
+    "subtopic": "willingness to accept higher unemployment to lower inflation",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that the risks of persistent inflation outweigh the potential downsides of higher unemployment?",
+    "subtopic": "willingness to accept higher unemployment to lower inflation",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that maintaining low unemployment should take precedence over aggressively combating inflation?",
+    "subtopic": "willingness to accept higher unemployment to lower inflation",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that the Federal Reserve should prioritize long-term economic stability over short-term employment figures?",
+    "subtopic": "willingness to accept higher unemployment to lower inflation",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that inflation expectations can be managed without accepting a rise in unemployment?",
+    "subtopic": "willingness to accept higher unemployment to lower inflation",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that the trade-off between unemployment and inflation is an acceptable aspect of current monetary policy considerations?",
+    "subtopic": "willingness to accept higher unemployment to lower inflation",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that the Federal Reserve should raise the federal funds rate preemptively when there are strong signals of anticipated inflation?",
+    "subtopic": "how preemptively to tighten against anticipated inflation",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that maintaining a low federal funds rate is essential for supporting economic growth, even in the face of inflationary pressures?",
+    "subtopic": "how preemptively to tighten against anticipated inflation",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that the risks associated with waiting too long to tighten monetary policy outweigh the risks of acting too soon?",
+    "subtopic": "how preemptively to tighten against anticipated inflation",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that targeting a specific inflation rate requires a more hawkish stance to ensure expectations remain anchored?",
+    "subtopic": "how preemptively to tighten against anticipated inflation",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that current economic indicators merit a dovish approach, prioritizing employment over the threat of inflation?",
+    "subtopic": "how preemptively to tighten against anticipated inflation",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that effective communication from the Federal Reserve about future monetary policy is crucial in managing inflation expectations?",
+    "subtopic": "how preemptively to tighten against anticipated inflation",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that the current rate of inflation necessitates a more hawkish stance in U.S. monetary policy?",
+    "subtopic": "how restrictive policy should be",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that sustained high unemployment rates justify a dovish approach to the federal funds rate?",
+    "subtopic": "how restrictive policy should be",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that recent economic growth indicates the need to adopt a less restrictive monetary policy?",
+    "subtopic": "how restrictive policy should be",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that financial market stability is at risk, requiring a more hawkish monetary policy?",
+    "subtopic": "how restrictive policy should be",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that potential recessions should prompt the Federal Reserve to maintain a dovish stance?",
+    "subtopic": "how restrictive policy should be",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that global economic uncertainties warrant a tighter monetary policy to protect the U.S. economy?",
+    "subtopic": "how restrictive policy should be",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that prioritizing growth risks should take precedence over financial stability concerns in the formulation of U.S. monetary policy?",
+    "subtopic": "weight on financial-stability and growth risks",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that the current level of the federal funds rate is adequate to mitigate potential financial instability while supporting economic growth?",
+    "subtopic": "weight on financial-stability and growth risks",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that a more aggressive increase in the federal funds rate is necessary to curb inflation even at the risk of slowing economic growth?",
+    "subtopic": "weight on financial-stability and growth risks",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that the Federal Reserve should implement more stringent regulations on financial institutions to enhance financial stability before adjusting monetary policy?",
+    "subtopic": "weight on financial-stability and growth risks",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that the long-term economic growth potential justifies maintaining a lower federal funds rate despite signs of financial market overheating?",
+    "subtopic": "weight on financial-stability and growth risks",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that the Federal Reserve should remain vigilant against the risks posed by asset bubbles even if this means sacrificing some short-term economic growth?",
+    "subtopic": "weight on financial-stability and growth risks",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that prioritizing the reduction of inflation to 2 percent should take precedence over promoting employment growth?",
+    "subtopic": "urgency of returning inflation to the 2 percent target",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that current inflation levels require immediate increases in the federal funds rate to prevent long-term economic damage?",
+    "subtopic": "urgency of returning inflation to the 2 percent target",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that maintaining a lower federal funds rate for an extended period is necessary to support economic recovery and growth?",
+    "subtopic": "urgency of returning inflation to the 2 percent target",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that the risks of allowing inflation to rise above 2 percent are more significant than the risks of stifling economic growth?",
+    "subtopic": "urgency of returning inflation to the 2 percent target",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that targeting a flexible inflation rate allows for better economic stability than strictly adhering to a 2 percent target?",
+    "subtopic": "urgency of returning inflation to the 2 percent target",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that the Federal Reserve should act decisively to signal a rigorous commitment to its inflation target, even if it risks short-term volatility?",
+    "subtopic": "urgency of returning inflation to the 2 percent target",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe the current level of inflation warrants an increase in the federal funds rate to prevent unanchored expectations?",
+    "subtopic": "concern about inflation expectations becoming unanchored",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that monetary policy should prioritize employment levels over concerns about inflation expectations falling out of alignment?",
+    "subtopic": "concern about inflation expectations becoming unanchored",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that the Federal Reserve should take preemptive measures to counteract potential inflationary pressures, even if the economy shows signs of weakness?",
+    "subtopic": "concern about inflation expectations becoming unanchored",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe there is a risk that maintaining a low federal funds rate for too long could lead to a significant rise in inflation expectations?",
+    "subtopic": "concern about inflation expectations becoming unanchored",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that communication strategies from the Federal Reserve are effective in managing public inflation expectations?",
+    "subtopic": "concern about inflation expectations becoming unanchored",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe the Fed should adopt a more aggressive approach in tightening monetary policy to ensure long-term price stability?",
+    "subtopic": "concern about inflation expectations becoming unanchored",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that the current signs of easing inflation justify an immediate cut in the federal funds rate?",
+    "subtopic": "patience before cutting rates as inflation eases",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that maintaining the current federal funds rate is essential to ensure inflation expectations remain anchored?",
+    "subtopic": "patience before cutting rates as inflation eases",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that there are enough indicators of economic strength to warrant a cautious approach before adjusting rates?",
+    "subtopic": "patience before cutting rates as inflation eases",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that cutting rates too soon could risk reigniting inflationary pressures in the economy?",
+    "subtopic": "patience before cutting rates as inflation eases",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that the labor market's strength should play a significant role in determining the timing of any rate cuts?",
+    "subtopic": "patience before cutting rates as inflation eases",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that a wait-and-see approach is necessary to fully understand the effects of previous monetary policy changes on inflation?",
+    "subtopic": "patience before cutting rates as inflation eases",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe the current level of labor-market slack justifies a more dovish stance on monetary policy?",
+    "subtopic": "weight on labor-market slack versus wage-driven inflation",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that rising wages are a significant driver of inflation, warranting a hawkish approach from the Federal Reserve?",
+    "subtopic": "weight on labor-market slack versus wage-driven inflation",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that the Federal Reserve should prioritize reducing unemployment over concerns about wage-driven inflation?",
+    "subtopic": "weight on labor-market slack versus wage-driven inflation",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe the recent trends in wage growth necessitate an immediate increase in the federal funds rate to combat inflation?",
+    "subtopic": "weight on labor-market slack versus wage-driven inflation",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that sustained labor-market tightness could lead to long-term inflation pressures, requiring a shift toward a hawkish monetary policy?",
+    "subtopic": "weight on labor-market slack versus wage-driven inflation",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that adopting a dovish stance in times of labor-market slack could result in overstimulating the economy and risking future inflation?",
+    "subtopic": "weight on labor-market slack versus wage-driven inflation",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe the current economic conditions warrant a higher neutral federal funds rate to ensure long-term stability?",
+    "subtopic": "appetite for a higher neutral rate / restrictive stance for longer",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that maintaining a restrictive monetary policy stance for an extended period will effectively combat inflation pressures?",
+    "subtopic": "appetite for a higher neutral rate / restrictive stance for longer",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that an increased focus on employment growth should lead to a more dovish approach to interest rate adjustments?",
+    "subtopic": "appetite for a higher neutral rate / restrictive stance for longer",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that global economic uncertainties justify a more hawkish stance to strengthen the U.S. dollar?",
+    "subtopic": "appetite for a higher neutral rate / restrictive stance for longer",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that the risk of a recession necessitates a more cautious, dovish approach to monetary policy?",
+    "subtopic": "appetite for a higher neutral rate / restrictive stance for longer",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that the financial market's reaction to anticipated rate hikes indicates a need for greater hawkishness in current policy?",
+    "subtopic": "appetite for a higher neutral rate / restrictive stance for longer",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that pursuing aggressive disinflation targets is worth the risk of triggering a recession?",
+    "subtopic": "tolerance for recession risk in pursuit of disinflation",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that a higher federal funds rate can effectively combat inflation without significantly harming economic growth?",
+    "subtopic": "tolerance for recession risk in pursuit of disinflation",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that the current inflationary environment justifies a temporary tolerance for slower job growth?",
+    "subtopic": "tolerance for recession risk in pursuit of disinflation",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that the Federal Reserve should prioritize inflation control over potential negative impacts on consumer spending?",
+    "subtopic": "tolerance for recession risk in pursuit of disinflation",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that historical precedents of recession resulting from tight monetary policy should caution against rapid rate increases?",
+    "subtopic": "tolerance for recession risk in pursuit of disinflation",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  },
+  {
+    "q": "Do you believe that effective communication from the Federal Reserve can mitigate the adverse effects of recession fears in the markets?",
+    "subtopic": "tolerance for recession risk in pursuit of disinflation",
+    "dove_end": "Dovish",
+    "hawk_end": "Hawkish"
+  }
+]

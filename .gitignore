@@ -216,3 +216,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- fomc-personas ---
+# Precomputed chunk embeddings: a ~100 MB hosted asset, fetched on demand into the
+# gitignored cache (load_chunks(embeddings="cached")). Not committed.
+data/embeddings.parquet
+# Regenerated figure intermediates (embeddings, generations, computed stats).
+paper/.cache/
+# Local API keys / env
+.env

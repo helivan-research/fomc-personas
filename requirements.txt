@@ -1,0 +1,10 @@
+numpy
+pandas
+pyarrow
+scipy
+scikit-learn
+matplotlib
+openai>=1.0
+requests
+tqdm
+python-dotenv
