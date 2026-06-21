@@ -12,7 +12,6 @@ from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 
 GEN_MODEL = "gpt-4o-mini"
-_START, _END = "###Start", "###End"
 _client = None
 
 
@@ -42,7 +41,7 @@ def system_prompt(member: str, bio: str = "") -> str:
          f"which sets U.S. monetary policy.")
     if bio:
         p += f" Background: {bio}"
-    return p + f" Start your answer to the question with {_START} and end your answer with {_END}."
+    return p
 
 
 def _user_prompt(question: str, retrieved: list[str], briefing: str | None = None) -> str:
@@ -58,11 +57,8 @@ def _user_prompt(question: str, retrieved: list[str], briefing: str | None = Non
 
 
 def _clean(text: str) -> str:
-    if not text:
-        return ""
-    m = re.search(re.escape(_START) + r"(.*?)" + re.escape(_END), text, re.S)
-    out = m.group(1) if m else text.replace(_START, "").replace(_END, "")
-    return re.sub(r"\s+", " ", out).strip()
+    """Collapse whitespace; gpt-4o-mini returns the answer directly (no delimiters needed)."""
+    return re.sub(r"\s+", " ", text).strip() if text else ""
 
 
 def generate(messages, model: str = GEN_MODEL, max_tokens: int = 90, workers: int = 12):
