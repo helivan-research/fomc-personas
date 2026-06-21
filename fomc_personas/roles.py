@@ -108,3 +108,13 @@ def roster(date, voting_only=False):
     """Members holding an FOMC office on ``date`` (optionally only voters)."""
     out = [m for m in _OFFICE if office_at(m, date) is not None]
     return [m for m in out if is_voting(m, date)] if voting_only else out
+
+
+def roles(member, date):
+    """{'is_voting', 'is_chair'} for a known FOMC member (None if unknown member; None values if the
+    date is missing/unparseable). Used to tag each chunk with as-of-date role at extraction time."""
+    if member not in _OFFICE:
+        return None
+    if _as_date(date) is None:
+        return {"is_voting": None, "is_chair": None}
+    return {"is_voting": is_voting(member, date), "is_chair": is_chair(member, date)}
