@@ -67,7 +67,8 @@ def _index_series(df, dec, bios, u, condition):
         _, briefing = macro.macro_briefing(series, d)
         tag = f"resp_{d}_{'cond' if condition else 'noc'}"
         resp = _cached(tag, lambda: persona.respond(
-            df_t, rost, battery, bios, k=TOPK, briefing=(briefing if condition else None)))
+            df_t, rost, battery, bios, k=TOPK, briefing=(briefing if condition else None),
+            prompt_fn=persona.index_prompt))
         pos = {}
         for m, rs in resp.items():
             valid = [r for r in rs if r]

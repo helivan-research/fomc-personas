@@ -45,15 +45,32 @@ def system_prompt(member: str, bio: str = "") -> str:
 
 
 def _user_prompt(question: str, retrieved: list[str], briefing: str | None = None) -> str:
+    """Stance-elicitation prompt (used for the stance/likeness figures). The `briefing` argument is
+    accepted for a uniform `prompt_fn` signature but unused here — stance elicitation is not
+    market-conditioned. The index figure passes `index_prompt` instead (which does use it)."""
     rows = "\n".join(f"- {t}" for t in retrieved)
-    head = (f"{briefing}\n\nHere are statements/positions you have actually expressed:\n{rows}\n\n"
-            f"In light of these current conditions, answer the following: \"{question}\""
-            if briefing else
-            f"Answer the following question: \"{question}\"\n\nHere are statements/positions you have "
-            f"actually expressed related to it:\n{rows}")
+    return (f'Answer the following question: "{question}"\n\n'
+            f'Here are statements/positions you have actually expressed related to it:\n'
+            f'{rows}\n\nState your actual position in AT MOST TWO SENTENCES, plainly and directly, '
+            f'making your stance on the policy direction (raise, hold, or cut rates, and inflation '
+            f'vs. employment priority) unmistakable. Do not hedge, do not equivocate, do not use '
+            f'emojis, do not use lists.')
+
+
+def index_prompt(question: str, retrieved: list[str], briefing: str | None = None) -> str:
+    """Rate-action-index prompt: with `briefing` (the as-of-date market conditions $c^{(t)}$) the
+    member answers *in light of current conditions*; without it (the $c^{(t)}$ ablation) the same
+    retrieval/persona runs unconditioned. Distinct from the stance prompt above and held fixed across
+    meetings — its wording is what the paper's PBI numbers were generated under."""
+    rows = "\n".join(f"- {t}" for t in retrieved)
+    if briefing:
+        head = (f"{briefing}\n\nHere are statements/positions you have actually expressed:\n{rows}\n\n"
+                f'In light of these current conditions, answer the following: "{question}"')
+    else:
+        head = (f"Here are statements/positions you have actually expressed:\n{rows}\n\n"
+                f'Answer the following: "{question}"')
     return (head + "\n\nState your position in AT MOST TWO SENTENCES, plainly and directly, making "
-            "your stance on the policy direction (raise, hold, or cut rates, and inflation vs. "
-            "employment priority) unmistakable. Do not hedge, do not equivocate, no emojis, no lists.")
+            "your stance unmistakable. Do not hedge, no emojis, no lists.")
 
 
 def _clean(text: str) -> str:
@@ -80,13 +97,16 @@ def generate(messages, model: str = GEN_MODEL, max_tokens: int = 90, workers: in
 
 
 def respond(df, members, queries, bios, k: int = 3, briefing: str | None = None,
-            model: str = GEN_MODEL):
+            model: str = GEN_MODEL, prompt_fn=None):
     """Elicit each member's answers to `queries` (a list of question strings).
 
     Returns {member: [response per query]}. `df` must have an `embedding` column; `bios` is
-    {member: biography}; `briefing` (optional) is the as-of-date macro string prepended to each query.
+    {member: biography}; `briefing` (optional) is the as-of-date macro string passed to `prompt_fn`.
+    `prompt_fn(question, retrieved, briefing) -> str` defaults to the stance prompt; the index figure
+    passes `index_prompt` to reproduce the paper's PBI wording.
     """
     from .embeddings import embed
+    prompt_fn = prompt_fn or _user_prompt
     q_emb = embed(list(queries))
     metas, messages = [], []
     for m in members:
@@ -98,7 +118,7 @@ def respond(df, members, queries, bios, k: int = 3, briefing: str | None = None,
             retrieved = retrieve(mdf, q_emb[qi], k)
             metas.append((m, qi))
             messages.append([{"role": "system", "content": sys},
-                             {"role": "user", "content": _user_prompt(q, retrieved, briefing)}])
+                             {"role": "user", "content": prompt_fn(q, retrieved, briefing)}])
     comps = generate(messages, model=model)
     out = {m: [""] * len(queries) for m in members}
     for (m, qi), c in zip(metas, comps):
