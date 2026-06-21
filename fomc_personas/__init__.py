@@ -11,12 +11,12 @@ from .stance import (
     axis, project, kendall_vs_external,
     meanpool_corpus, meanpool_retrieved, meanpool_generated,
 )
-from . import roles, macro
+from . import roles, macro, likeness
 
 __all__ = [
     "load_chunks", "load_bios", "load_queries", "load_anchors", "load_reputational",
     "embed", "retrieve", "respond", "generate", "system_prompt",
     "axis", "project", "kendall_vs_external",
     "meanpool_corpus", "meanpool_retrieved", "meanpool_generated",
-    "roles", "macro",
+    "roles", "macro", "likeness",
 ]
