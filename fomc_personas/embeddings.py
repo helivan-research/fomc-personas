@@ -45,16 +45,20 @@ def embed(texts, batch_size: int = 256) -> np.ndarray:
     keys = [_key(t) for t in texts]
     out: list[np.ndarray | None] = [None] * len(texts)
 
-    # load whatever is cached
+    # load whatever is cached (treat an unreadable/truncated file as a miss, not a crash:
+    # a run killed mid-write can leave a partial .npy behind)
     missing = []
     for i, k in enumerate(keys):
         p = _cache_path(k)
-        if p.exists():
-            out[i] = np.load(p)
-        else:
+        try:
+            out[i] = np.load(p) if p.exists() else None
+        except Exception:
+            out[i] = None
+        if out[i] is None:
             missing.append(i)
 
-    # embed the misses in batches
+    # embed the misses in batches; write each cache file atomically (tmp + rename) so an
+    # interruption never leaves a half-written .npy that poisons the next run
     for s in range(0, len(missing), batch_size):
         idx = missing[s:s + batch_size]
         resp = _openai().embeddings.create(
@@ -65,6 +69,9 @@ def embed(texts, batch_size: int = 256) -> np.ndarray:
             out[i] = v
             p = _cache_path(keys[i])
             p.parent.mkdir(parents=True, exist_ok=True)
-            np.save(p, v)
+            tmp = p.with_name(f"{p.name}.tmp.{os.getpid()}")
+            with open(tmp, "wb") as fh:   # file handle -> np.save won't re-append .npy
+                np.save(fh, v)
+            os.replace(tmp, p)
 
     return np.vstack(out).astype(np.float32)
