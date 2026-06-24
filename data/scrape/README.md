@@ -9,8 +9,13 @@ transparency and so the dataset can be **kept current**.
 ## Pipeline
 
 ```
-scrape (public sources)  ->  extract_chunks (gpt-4o-mini)  ->  embed (text-embedding-3-large)  ->  chunks/<member>.parquet
+scrape (public sources) -> extract_chunks (gpt-4o-mini) -> embed (text-embedding-3-large)
+  -> chunks/<member>.parquet (text + metadata + chunk_id) + embeddings/<member>.parquet (chunk_id + vector)
 ```
+
+The dataset is **split**: a `chunks/` shard (text + metadata) and an `embeddings/` shard
+(`chunk_id`, `embedding`) per member, joined on a global integer `chunk_id`. This is exactly the
+published HF layout, so `build_dataset.py` reads and writes it directly.
 
 | file | role |
 |---|---|
@@ -27,20 +32,35 @@ All scrapers fetch only public data and take a `start_date` lower bound. Extract
 
 ## Incremental & idempotent
 
-`build_dataset.py` does **not** re-scrape from scratch. For each member it reads the chunks already
-present, scrapes only documents published **after** the latest one, deduplicates by URL, and extracts
-+ embeds **only the new passages**. Re-running when nothing new has been published does no work;
-refreshing one member touches only that member's shard.
+`build_dataset.py` does **not** re-scrape from scratch. For each member it reads the shards already
+present, scrapes only documents published **after** the latest one, skips URLs already seen (document
+level — one document yields many chunks, so there is no chunk-level dedup), and extracts + embeds
+**only the new passages**. New chunks get sequential `chunk_id`s continuing from the global maximum.
+Re-running when nothing new has been published does no work; refreshing one member touches only that
+member's two shards.
+
+It operates on a working copy of the dataset (`--data-dir`, default `$FOMC_DATASET_DIR` or
+`data/.hf_dataset/`, gitignored). `--pull` downloads the current dataset from the Hub first; `--push`
+uploads the changed shards back when done.
 
 ```bash
-# update one member (cheap if nothing new has been published)
+# update one member into the local working copy (cheap if nothing new has been published)
 OPENAI_API_KEY=sk-...  python data/scrape/build_dataset.py --member "Jerome H. Powell"
 
-# update everyone, then push the changed shards to the Hub
-OPENAI_API_KEY=sk-...  python data/scrape/build_dataset.py --all
-python -c "from huggingface_hub import HfApi; HfApi().upload_folder(folder_path='data/chunks', \
-  path_in_repo='chunks', repo_id='helivan/fomc-personas', repo_type='dataset')"
+# pull the published dataset, update everyone, push the changed shards back to the Hub
+OPENAI_API_KEY=sk-...  HF_TOKEN=hf_...  python data/scrape/build_dataset.py --all --pull --push
 ```
 
-Because chunks are sharded per member and keyed by a stable `chunk_id`, adding the two not-yet-onboarded
-members or refreshing an existing one is a one-shard change, and `load_dataset` still returns one table.
+Because each member is two small shards keyed by a stable `chunk_id`, refreshing one (or adding a
+not-yet-onboarded member) is a one-shard change, and `load_dataset` still returns one joined table.
+
+## Scheduled refresh (GitHub Actions)
+
+`.github/workflows/update-dataset.yml` runs the `--all --pull --push` command **weekly** (Mondays
+06:00 UTC; also runnable on demand via *workflow_dispatch*). A run with nothing new pushes nothing.
+It needs two repository secrets:
+
+| secret | used for |
+|---|---|
+| `OPENAI_API_KEY` | chunk extraction (gpt-4o-mini) + embeddings (text-embedding-3-large) |
+| `HF_TOKEN` | write access to the `helivan/fomc-personas` dataset (also reads it for `--pull`) |

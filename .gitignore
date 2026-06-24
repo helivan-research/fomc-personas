@@ -223,5 +223,9 @@ __marimo__/
 data/embeddings.parquet
 # Regenerated figure intermediates (embeddings, generations, computed stats).
 paper/.cache/
+# Working copy of the HF dataset used by data/scrape/build_dataset.py (--pull/--push).
+data/.hf_dataset/
+# Scraper intermediates (raw scraped JSON + BIS slug cache); regenerated, never committed.
+data/fed/
 # Local API keys / env
 .env

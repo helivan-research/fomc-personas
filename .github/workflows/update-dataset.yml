@@ -1,0 +1,45 @@
+name: Update HF dataset
+
+# Weekly incremental refresh of the helivan/fomc-personas Hugging Face dataset: scrape each member's
+# new public documents, extract + embed the new passages, and push the changed shards back to HF.
+# Incremental, so a run with nothing new does (almost) no work and no push.
+#
+# Requires two repository secrets:
+#   OPENAI_API_KEY  — chunk extraction (gpt-4o-mini) + embeddings (text-embedding-3-large)
+#   HF_TOKEN        — write access to the helivan/fomc-personas dataset (also reads it for the pull)
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # Mondays 06:00 UTC
+  workflow_dispatch: {}    # allow manual runs
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-dataset
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install poppler-utils (pdftotext, for FOMC transcript PDFs)
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Scrape, extract, embed, and push to HF
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python data/scrape/build_dataset.py --all --pull --push
