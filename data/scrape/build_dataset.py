@@ -125,6 +125,9 @@ def update_member(data_dir, member, next_id):
         return next_id, 0
 
     chunks = extract_opinions(records)                       # LLM extraction (gpt-4o-mini)
+    if not chunks:                                           # new doc(s) but nothing extractable
+        print(f"  {member}: {len(records)} new doc(s), no extractable chunks")
+        return next_id, 0
     rows = []
     for rec in chunks.values():
         r = dict(rec)
