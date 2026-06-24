@@ -119,7 +119,10 @@ def update_member(data_dir, member, next_id):
         start_date = str(existing["postedAt"].max())[:10]
         seen = set(existing["postUrl"].dropna())
 
-    records = {k: v for k, v in scrape_member(member, start_date).items() if v.get("postUrl") not in seen}
+    # Keep only well-formed record dicts (a scraper that fails returns {'error': ...}, whose value
+    # is a string) and drop documents already seen.
+    records = {k: v for k, v in scrape_member(member, start_date).items()
+               if isinstance(v, dict) and v.get("postUrl") not in seen}
     if not records:
         print(f"  {member}: no new documents since {start_date or 'inception'}")
         return next_id, 0

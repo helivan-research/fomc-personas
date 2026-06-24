@@ -17,3 +17,4 @@ huggingface_hub
 requests
 beautifulsoup4
 pydantic>=2
+playwright   # BIS president-speech scraper (needs a browser: `playwright install chromium`)
