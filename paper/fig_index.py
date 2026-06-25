@@ -190,12 +190,15 @@ def main():
     m22 = np.array([d >= "2022" for d in dates])
     labels = [pbi[d]["label"] for d in dates]
 
-    # macro + Taylor features
+    # macro + Taylor features. The macro classifier receives every variable in the conditioning
+    # briefing c^(t) the personas read (headline CPI, core PCE, unemployment, the funds-rate ceiling)
+    # plus the momentum of the inflation/employment conditions -- a SUPERSET of PBI's information,
+    # just raw instead of compressed into the behavioural index.
     snaps = [macro.macro_briefing(series, d)[0] for d in dates]
-    pi = np.array([s["core_pce_yoy"] for s in snaps]); un = np.array([s["unrate"] for s in snaps])
-    cur = np.array([s["target_upper"] for s in snaps])
+    cpi = np.array([s["cpi_yoy"] for s in snaps]); pi = np.array([s["core_pce_yoy"] for s in snaps])
+    un = np.array([s["unrate"] for s in snaps]); cur = np.array([s["target_upper"] for s in snaps])
     gap = 2 + pi + 0.5 * (pi - 2) - (un - 4.4) - cur
-    macro_feats = [pi, un, cur, _mom(pi), _mom(un)]
+    macro_feats = [cpi, pi, un, cur, _mom(cpi), _mom(pi), _mom(un)]
     noc_idx = np.array([noc.get(d, {"index": 0.0})["index"] for d in dates])
     ridx = np.array([ridx_d.get(d, 0.0) for d in dates])
     dvote = np.array([dvote_d.get(d, 0) for d in dates])
