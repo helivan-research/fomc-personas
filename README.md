@@ -4,6 +4,8 @@ Data and reproduction code for **"A Persona-Based Rate-Action Index"** — digit
 U.S. Federal Open Market Committee (FOMC) built from members' public record, used to recover their
 monetary-policy stance and to construct an index that tracks and anticipates rate decisions.
 
+The personas power an interactive site: **[federalreserve.ai](https://federalreserve.ai)**.
+
 The repository contains:
 
 - **`data/`** — the retrievable-chunk dataset (17 of 19 sitting members, 24,333 chunks, 2006–2026) plus
