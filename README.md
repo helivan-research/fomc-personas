@@ -12,6 +12,10 @@ The repository contains:
 - **`paper/`** — one standalone script per paper figure. Each regenerates its intermediates into a
   gitignored cache and writes the figure PDF; nothing precomputed is committed.
 
+The chunk corpus and embeddings are published as a Hugging Face dataset —
+**[`helivan/fomc-personas`](https://huggingface.co/datasets/helivan/fomc-personas)** — which this
+library downloads on demand (`load_chunks(embeddings="cached")`).
+
 ## Quickstart
 
 ```bash
@@ -54,7 +58,7 @@ self-contained sentence stating the member's position; `theme` is one of six mac
 
 `load_chunks(embeddings=...)`:
 
-- `"cached"` — download the hosted `embeddings.parquet` once into the local cache (no OpenAI calls).
+- `"cached"` — download the embeddings from the [Hugging Face dataset](https://huggingface.co/datasets/helivan/fomc-personas) once into the local cache (no OpenAI calls).
 - `"compute"` — embed the chunks with your own key (`text-embedding-3-large`, ≈ \$0.20 for the full corpus); cached locally so it only happens once.
 - `"none"` — text + metadata only (e.g. Figure 1).
 
