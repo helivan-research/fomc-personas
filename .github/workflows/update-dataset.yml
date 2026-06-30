@@ -7,6 +7,12 @@ name: Update HF dataset
 # Requires two repository secrets:
 #   OPENAI_API_KEY  — chunk extraction (gpt-4o-mini) + embeddings (text-embedding-3-large)
 #   HF_TOKEN        — write access to the helivan/fomc-personas dataset (also reads it for the pull)
+#
+# Optional, to auto-refresh the live federalreserve.ai site after the dataset updates (restarts the
+# Railway service, which re-syncs the corpus from HF on boot):
+#   RAILWAY_TOKEN       — a Railway *project* token (Railway → project → Settings → Tokens)
+#   RAILWAY_SERVICE_ID  — the web service's ID (Railway → service → Settings, or from the URL)
+# Both unset -> the redeploy step is skipped.
 
 on:
   schedule:
@@ -46,3 +52,18 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: python data/scrape/build_dataset.py --all --pull --push
+
+      # Restart the live site so it re-syncs the freshened corpus from HF on boot. The /cache volume
+      # makes this incremental. Skipped gracefully if the Railway secrets aren't configured.
+      - name: Redeploy the live site (Railway)
+        if: success()
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+        run: |
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "RAILWAY_TOKEN not set — skipping live-site redeploy."
+            exit 0
+          fi
+          npm install -g @railway/cli
+          railway redeploy --service "$RAILWAY_SERVICE_ID" --yes
