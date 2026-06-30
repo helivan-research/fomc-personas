@@ -165,6 +165,14 @@ def _pull(data_dir):
                       token=os.environ.get("HF_TOKEN"))
 
 
+def _gha_output(name, value):
+    """Set a GitHub Actions step output (no-op outside Actions), so a later step can gate on it."""
+    path = os.environ.get("GITHUB_OUTPUT")
+    if path:
+        with open(path, "a") as f:
+            f.write(f"{name}={value}\n")
+
+
 def _push(data_dir):
     from huggingface_hub import HfApi
     api = HfApi(token=os.environ.get("HF_TOKEN"))
@@ -208,6 +216,7 @@ def main():
         else:
             print(f"pushing to {HF_REPO}")
             _push(data_dir)
+            _gha_output("pushed", "true")   # signal CI that the dataset actually changed
     elif total_new:
         print("Done. Re-run with --push (or upload <data-dir>/{chunks,embeddings} via huggingface_hub).")
 

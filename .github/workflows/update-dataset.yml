@@ -48,15 +48,17 @@ jobs:
         run: python -m playwright install --with-deps chromium
 
       - name: Scrape, extract, embed, and push to HF
+        id: refresh
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: python data/scrape/build_dataset.py --all --pull --push
 
       # Restart the live site so it re-syncs the freshened corpus from HF on boot. The /cache volume
-      # makes this incremental. Skipped gracefully if the Railway secrets aren't configured.
+      # makes this incremental. Runs only when the dataset actually changed (new chunks were pushed),
+      # and is skipped gracefully if the Railway secrets aren't configured.
       - name: Redeploy the live site (Railway)
-        if: success()
+        if: success() && steps.refresh.outputs.pushed == 'true'
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
