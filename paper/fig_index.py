@@ -4,10 +4,13 @@
 (c) walk-forward OOS decision accuracy vs baselines.
 
 At each meeting the in-office roster's personas answer a fixed 15-question battery, prepended with an
-as-of-date macro briefing c^(t), with retrieval restricted to chunks dated <= t. Their projected
-stances are averaged into the committee index. Per-meeting generation is cached under
-paper/.cache/figure_index/. This is the costliest figure (per-meeting generation for PBI + the
-static-query ablation): first run is several $ and ~30-40 min; reruns plot instantly.
+as-of-date macro briefing c^(t). Retrieval is recency-weighted (relevance + beta*recency, with
+exp(-age/tau)) over chunks dated <= t; the weighting (beta=0.6, tau=2yr) is the setting selected by
+paper/experiments/retrieval_cv.py, which separates hold vs. cut markedly better than pure relevance
+(cut-vs-rest AUC 0.76 -> 0.90). Their projected stances are averaged into the committee index. The
+tuned per-meeting generations are cached under paper/.cache/retrieval_cv/beta{b}_tau{t}/ (built by
+retrieval_cv.py); the static-query ablation is cached under paper/.cache/figure_index/. With those
+caches present the figure plots in seconds and makes no paid calls.
 
     OPENAI_API_KEY=sk-...  python paper/fig_index.py
 """
@@ -34,6 +37,12 @@ plt.rcParams.update({"font.size": 8, "font.family": "serif", "axes.grid": True, 
 
 MIN_OPINIONS, TOPK = 5, 3
 RED, BLUE, GREY = "#C44E52", "#4C72B0", "#999999"
+
+# The PBI uses the CV-tuned recency-weighted retrieval (relevance + beta*recency, exp(-age/tau)).
+# Those conditioned per-meeting generations are cached by paper/experiments/retrieval_cv.py under
+# .cache/retrieval_cv/beta{b}_tau{t}/. Set to "0.0"/None to fall back to the pure-relevance cache.
+RETRIEVAL_BETA, RETRIEVAL_TAU = "0.6", "2.0"
+BETA_DIR = Path(__file__).resolve().parent / ".cache" / "retrieval_cv" / f"beta{RETRIEVAL_BETA}_tau{RETRIEVAL_TAU}"
 
 
 def _roster(df_t):
@@ -77,6 +86,33 @@ def _index_series(df, dec, bios, u, condition):
         if pos:
             out[d] = {"index": float(np.mean(list(pos.values()))), "positions": pos,
                       "bps": dec[d]["bps"], "label": dec[d]["label"]}
+    return out
+
+
+def _pbi_series(dec, u):
+    """Per-meeting committee index from the CV-tuned recency-weighted generations (cached, no calls).
+    Same structure as _index_series(condition=True) but reads .cache/retrieval_cv/beta{b}_tau{t}/, so
+    the PBI uses relevance + beta*recency retrieval instead of pure relevance."""
+    out = {}
+    for d in macro.FOMC_MEETINGS:
+        if dec[d]["bps"] is None:
+            continue
+        p = BETA_DIR / f"resp_{d}.json"
+        if not p.exists():
+            continue
+        resp = json.loads(p.read_text())
+        spans, texts = [], []                         # one batched embed call per meeting
+        for m, rs in resp.items():
+            valid = [r for r in rs if r]
+            if valid:
+                spans.append((m, len(texts), len(texts) + len(valid)))
+                texts.extend(valid)
+        if not texts:
+            continue
+        embs = fp.embed(texts)
+        pos = {m: float(embs[lo:hi].mean(0) @ u) for m, lo, hi in spans}
+        out[d] = {"index": float(np.mean(list(pos.values()))), "positions": pos,
+                  "bps": dec[d]["bps"], "label": dec[d]["label"]}
     return out
 
 
@@ -175,8 +211,12 @@ def main():
     series = macro.load_fred()
     dec = macro.decisions(series)
 
-    print("PBI backtest (conditioned) ...")
-    pbi = _index_series(df, dec, bios, u, condition=True)
+    print(f"PBI backtest (conditioned, recency-weighted beta={RETRIEVAL_BETA} tau={RETRIEVAL_TAU}) ...")
+    if BETA_DIR.exists():
+        pbi = _pbi_series(dec, u)
+    else:                                             # no tuned cache -> generate pure-relevance PBI
+        print(f"  ! {BETA_DIR} missing; run paper/experiments/retrieval_cv.py. Falling back to relevance.")
+        pbi = _index_series(df, dec, bios, u, condition=True)
     print("static query set (no c^(t)) ...")
     noc = _index_series(df, dec, bios, u, condition=False)
     print("baselines ...")
