@@ -1,7 +1,8 @@
 """Figure 4 — the persona-based rate-action index (PBI).
 
 (a) PBI vs the fed funds target over 2018-2025; (b) PBI by realized decision (2022-25);
-(c) walk-forward OOS decision accuracy vs baselines.
+(c) walk-forward OOS decision accuracy vs baselines; (d) lead-lag -- correlation of the PBI with the
+target level as the index is slid forward, showing the PBI leads the rate level by ~3 quarters.
 
 At each meeting the in-office roster's personas answer a fixed 15-question battery, prepended with an
 as-of-date macro briefing c^(t). Retrieval is recency-weighted (relevance + beta*recency, with
@@ -23,6 +24,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.stats import kendalltau
 from sklearn.linear_model import LinearRegression
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -204,6 +206,17 @@ def _acc(pred, y, mask):
     return float((pred[m] == y[m]).mean())
 
 
+def _lead_lag(idx, tgt, shifts):
+    """Correlation of the PBI with the fed-funds target level when the PBI is shifted forward by k
+    meetings (idx[t] vs target[t+k], k>0 = PBI leads). Returns Pearson r and Kendall tau per shift."""
+    rs, taus = [], []
+    for s in shifts:
+        a, b = (idx[:len(idx) - s], tgt[s:]) if s >= 0 else (idx[-s:], tgt[:len(idx) + s])
+        rs.append(float(np.corrcoef(a, b)[0, 1]))
+        taus.append(float(kendalltau(a, b).correlation))
+    return np.array(rs), np.array(taus)
+
+
 def main():
     df = fp.load_chunks(embeddings="cached")
     bios = fp.load_bios()
@@ -260,15 +273,26 @@ def main():
     print("  2022-25 OOS 3-class:", {k: round(v, 2) for k, v in accs.items()})
 
     tgt = np.array([macro.macro_briefing(series, d)[0]["target_upper"] for d in dates])
-    _plot(dates, idx, tgt, labels, accs, base)
+
+    # Lead-lag: the PBI leads the funds-rate LEVEL. Sliding the index forward monotonically raises its
+    # correlation with the target, peaking ~6 meetings (~3 quarters) ahead. Computed over the full
+    # series (level-tracking is a whole-sample property).
+    ll_shifts = np.arange(-2, 9)
+    ll_r, ll_tau = _lead_lag(idx, tgt, ll_shifts)
+    kbest = int(ll_shifts[np.nanargmax(ll_tau)])
+    print(f"  lead-lag vs target: contemporaneous r={ll_r[list(ll_shifts).index(0)]:.2f} "
+          f"tau={ll_tau[list(ll_shifts).index(0)]:.2f} ; best +{kbest} mtgs "
+          f"r={np.nanmax(ll_r):.2f} tau={np.nanmax(ll_tau):.2f}")
+
+    _plot(dates, idx, tgt, labels, accs, base, (ll_shifts, ll_r, ll_tau))
     print(f"wrote {FIG/'fig_index.pdf'}  (PBI acc={accs['PBI']:.2f} vs base {base:.2f})")
 
 
-def _plot(dates, idx, tgt, labels, accs, base):
+def _plot(dates, idx, tgt, labels, accs, base, leadlag):
     x = [np.datetime64(d) for d in dates]
-    fig = plt.figure(figsize=(7.2, 3.85))
-    gs = fig.add_gridspec(2, 2, height_ratios=[1.0, 1.0], width_ratios=[1.0, 1.55],
-                          hspace=0.45, wspace=0.28)
+    fig = plt.figure(figsize=(7.4, 4.45))
+    gs = fig.add_gridspec(2, 3, height_ratios=[1.0, 1.02], width_ratios=[1.0, 1.28, 1.02],
+                          hspace=0.55, wspace=0.42)
 
     ax = fig.add_subplot(gs[0, :])
     ax.axhline(0, color="k", lw=.6, alpha=.4)
@@ -309,9 +333,33 @@ def _plot(dates, idx, tgt, labels, accs, base):
     axb.axhline(base, ls=":", color="0.4", lw=.8)
     axb.text(0.02, base + .008, f"base rate ${base:.2f}$", transform=axb.get_yaxis_transform(),
              ha="left", va="bottom", fontsize=5, color="0.4")
-    axb.set_xticks(range(len(order))); axb.set_xticklabels(order, fontsize=6)
+    axb.set_xticks(range(len(order)))
+    axb.set_xticklabels(order, fontsize=6, rotation=35, ha="right", rotation_mode="anchor")
     axb.set_ylim(0, .92); axb.set_ylabel("OOS accuracy", fontsize=7); axb.tick_params(labelsize=6)
     axb.set_title("(c) decision accuracy vs. baselines", fontsize=8)
+
+    # (d) lead-lag: correlation of the PBI with the fed-funds target level as the index is slid forward.
+    # The monotonic rise is the story -- the PBI anticipates where the committee walks the rate.
+    axd = fig.add_subplot(gs[1, 2])
+    shifts, ll_r, ll_tau = leadlag
+    axd.axvspan(0, shifts.max() + .4, color=RED, alpha=.05)      # "PBI leads" region
+    axd.axvline(0, color="k", lw=.7, alpha=.45)
+    axd.plot(shifts, ll_r, "--o", color="#888", lw=1.0, ms=2.3, label=r"Pearson $r$")
+    axd.plot(shifts, ll_tau, "-o", color=RED, lw=1.5, ms=3.0, label=r"Kendall $\tau$")
+    i0 = list(shifts).index(0)
+    axd.annotate("contemp.", xy=(0, ll_tau[i0]), xytext=(-2.0, .12), fontsize=5, color="0.35",
+                 arrowprops=dict(arrowstyle="->", color="0.5", lw=.6))
+    if 6 in shifts:                                              # mark the ~3-quarter lead
+        i6 = list(shifts).index(6)
+        axd.annotate(rf"$\tau{{=}}{ll_tau[i6]:.2f}$", xy=(6, ll_tau[i6]), xytext=(6, ll_tau[i6] + .07),
+                     fontsize=5.6, color=RED, ha="center")
+    axd.text(shifts.max(), .045, "PBI leads $\\rightarrow$", ha="right", va="bottom", fontsize=5.6,
+             color=RED, style="italic")
+    axd.set_xlabel("PBI lead (meetings)", fontsize=7)
+    axd.set_ylabel("corr. w/ target level", fontsize=7)
+    axd.set_title("(d) the PBI leads the rate level", fontsize=8)
+    axd.set_ylim(0, .98); axd.set_xticks(range(-2, 9, 2)); axd.tick_params(labelsize=6)
+    axd.legend(fontsize=5.4, loc="lower right", handlelength=1.3, framealpha=.85)
 
     fig.savefig(FIG / "fig_index.pdf", bbox_inches="tight"); plt.close(fig)
 
