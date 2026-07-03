@@ -47,10 +47,12 @@ plt.rcParams.update({"font.size": 8, "font.family": "serif", "axes.grid": True, 
 MIN_OPINIONS, TOPK = 5, 3
 RED, BLUE, GREY = "#C44E52", "#4C72B0", "#999999"
 
-# The PBI uses the CV-tuned recency-weighted retrieval (relevance + beta*recency, exp(-age/tau)).
-# Those conditioned per-meeting generations are cached by paper/experiments/retrieval_cv.py under
-# .cache/retrieval_cv/beta{b}_tau{t}/. Set to "0.0"/None to fall back to the pure-relevance cache.
-RETRIEVAL_BETA, RETRIEVAL_TAU = "0.6", "2.0"
+# The PBI uses PURE-RELEVANCE retrieval (beta=0). Under the point-in-time corpus the recency tilts
+# explored by experiments/retrieval_cv.py no longer help -- they were an artifact of the transcript
+# leak (recency up-weighted exactly the embargoed material). beta=0 is the no-knob default, best on
+# the eval window AND on the post-LLM-cutoff validation split (see .cache/retrieval_cv/
+# sensitivity_pit.json, built by experiments/cv_pit.py).
+RETRIEVAL_BETA, RETRIEVAL_TAU = "0.0", "2.0"
 BETA_DIR = Path(__file__).resolve().parent / ".cache" / "retrieval_cv" / f"beta{RETRIEVAL_BETA}_tau{RETRIEVAL_TAU}_pit"
 
 
