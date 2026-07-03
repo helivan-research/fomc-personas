@@ -99,13 +99,13 @@ def index_series(df, dec, bios, u, beta, tau):
     series = macro.load_fred()
     battery = fp.load_queries("curated")[:15]
     qv = fp.embed(battery)
-    cdir = CACHE / f"beta{beta}_tau{tau}"
+    cdir = CACHE / f"beta{beta}_tau{tau}_pit"      # _pit: point-in-time filter (see F._public_asof)
     cdir.mkdir(parents=True, exist_ok=True)
     out = {}
     for d in macro.FOMC_MEETINGS:
         if dec[d]["bps"] is None:
             continue
-        df_t = df[df["postedAt"].astype(str) <= d]
+        df_t = F._public_asof(df, d)
         rost = [m for m in F._roster(df_t) if roles.office_at(m, d) is not None]
         if not rost:
             continue

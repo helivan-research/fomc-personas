@@ -1,17 +1,23 @@
 """Figure 4 — the persona-based rate-action index (PBI).
 
 (a) PBI vs the fed funds target over 2018-2025; (b) PBI by realized decision (2022-25);
-(c) walk-forward OOS decision accuracy vs baselines; (d) lead-lag -- correlation of the PBI with the
-target level as the index is slid forward, showing the PBI leads the rate level by ~3 quarters.
+(c) walk-forward OOS decision accuracy vs baselines (+ accuracy at decision changes, where the
+persistence baseline scores 0 by construction); (d) lead-lag -- Kendall tau of the PBI with the
+target LEVEL as the index is slid forward (tau 0.38 contemporaneous -> ~0.79 at +9 meetings),
+against two mechanical controls (raw CPI; the no-briefing static index), both of which it exceeds.
 
 At each meeting the in-office roster's personas answer a fixed 15-question battery, prepended with an
-as-of-date macro briefing c^(t). Retrieval is recency-weighted (relevance + beta*recency, with
-exp(-age/tau)) over chunks dated <= t; the weighting (beta=0.6, tau=2yr) is the setting selected by
-paper/experiments/retrieval_cv.py, which separates hold vs. cut markedly better than pure relevance
-(cut-vs-rest AUC 0.76 -> 0.90). Their projected stances are averaged into the committee index. The
-tuned per-meeting generations are cached under paper/.cache/retrieval_cv/beta{b}_tau{t}/ (built by
-retrieval_cv.py); the static-query ablation is cached under paper/.cache/figure_index/. With those
-caches present the figure plots in seconds and makes no paid calls.
+as-of-date macro briefing c^(t). Retrieval is POINT-IN-TIME (see _public_asof: embargoed FOMC
+transcripts are dated at their ~5-year release, strict day-before cutoff) and recency-weighted
+(relevance + beta*recency, exp(-age/tau); beta=0.6, tau=2yr from paper/experiments/retrieval_cv.py).
+Honesty notes: (beta, tau) was selected on the same 2022+ eval window the paper reports, so treat the
+cut-discrimination gain vs pure relevance as in-sample-selected; and the walk-forward accuracy (0.66)
+sits below the persistence baseline (0.78) on this hold-heavy window -- persistence is blind at
+turning points, which is where the index carries its value.
+
+Projected stances are averaged into the committee index. Generations are cached under
+paper/.cache/retrieval_cv/beta{b}_tau{t}_pit/ (built by retrieval_cv.py) and the ablations under
+paper/.cache/figure_index_pit/. With those caches present the figure plots in seconds, no paid calls.
 
     OPENAI_API_KEY=sk-...  python paper/fig_index.py
 """
@@ -24,6 +30,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from scipy.stats import kendalltau
 from sklearn.linear_model import LinearRegression
 
@@ -31,7 +38,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import fomc_personas as fp
 from fomc_personas import macro, roles, persona
 
-CACHE = Path(__file__).resolve().parent / ".cache" / "figure_index"
+CACHE = Path(__file__).resolve().parent / ".cache" / "figure_index_pit"   # v2: point-in-time filter
 CACHE.mkdir(parents=True, exist_ok=True)
 FIG = Path(__file__).resolve().parent / "figures"
 FIG.mkdir(exist_ok=True)
@@ -44,11 +51,31 @@ RED, BLUE, GREY = "#C44E52", "#4C72B0", "#999999"
 # Those conditioned per-meeting generations are cached by paper/experiments/retrieval_cv.py under
 # .cache/retrieval_cv/beta{b}_tau{t}/. Set to "0.0"/None to fall back to the pure-relevance cache.
 RETRIEVAL_BETA, RETRIEVAL_TAU = "0.6", "2.0"
-BETA_DIR = Path(__file__).resolve().parent / ".cache" / "retrieval_cv" / f"beta{RETRIEVAL_BETA}_tau{RETRIEVAL_TAU}"
+BETA_DIR = Path(__file__).resolve().parent / ".cache" / "retrieval_cv" / f"beta{RETRIEVAL_BETA}_tau{RETRIEVAL_TAU}_pit"
+
+
+def _public_asof(df, d):
+    """Chunks *publicly available* strictly before meeting date d (point-in-time filter).
+
+    Two fixes over the previous `postedAt.astype(str) <= d` string compare:
+      - FOMC meeting *transcripts* are embargoed ~5 years (year Y is released ~Jan of Y+6). They are
+        dated at the meeting they record, so filtering on postedAt alone let the backtest retrieve
+        text that was not public at time t. Their availability date is the release, not the meeting.
+      - The cutoff is an explicit datetime strict-< (day-before). The old string compare happened to
+        exclude same-day rows only because most timestamps carry a time component -- a data property,
+        not a guarantee. Same-day statements (e.g. the post-decision press conference) must never be
+        retrievable when "predicting" that decision.
+    Recency *ages* still use postedAt (when the words were said); only availability changes.
+    """
+    ts = pd.to_datetime(df["postedAt"], errors="coerce")
+    avail = ts.copy()
+    tr = (df["source"] == "fomc_transcript").values
+    avail[tr] = pd.to_datetime((ts[tr].dt.year + 6).astype(str) + "-01-15")
+    return df[avail < pd.Timestamp(d)]
 
 
 def _roster(df_t):
-    """In-office members at this meeting with at least MIN_OPINIONS chunks dated <= t."""
+    """In-office members at this meeting with at least MIN_OPINIONS chunks available <= t."""
     counts = df_t["member"].value_counts()
     return [m for m in counts.index if counts[m] >= MIN_OPINIONS]
 
@@ -71,7 +98,7 @@ def _index_series(df, dec, bios, u, condition):
     for d in macro.FOMC_MEETINGS:
         if dec[d]["bps"] is None:
             continue
-        df_t = df[df["postedAt"].astype(str) <= d]
+        df_t = _public_asof(df, d)
         rost = [m for m in _roster(df_t) if roles.office_at(m, d) is not None]
         if not rost:
             continue
@@ -127,7 +154,7 @@ def _retrieved_index(df, dec, u):
     for d in macro.FOMC_MEETINGS:
         if dec[d]["bps"] is None:
             continue
-        df_t = df[df["postedAt"].astype(str) <= d]
+        df_t = _public_asof(df, d)
         pos = []
         for m in _roster(df_t):
             g = df_t[df_t["member"] == m]
@@ -147,7 +174,7 @@ def _direct_vote(df, dec, bios):
     for d in macro.FOMC_MEETINGS:
         if dec[d]["bps"] is None:
             continue
-        df_t = df[df["postedAt"].astype(str) <= d]
+        df_t = _public_asof(df, d)
         rost = [m for m in _roster(df_t) if roles.office_at(m, d) is not None]
         if not rost:
             continue
@@ -272,23 +299,39 @@ def main():
     accs = {k: _acc(p, y, m22) for k, p in preds.items()}
     print("  2022-25 OOS 3-class:", {k: round(v, 2) for k, v in accs.items()})
 
+    # Accuracy AT DECISION CHANGES: the honest counterpoint to the persistence baseline. Persistence
+    # (repeat the last decision) wins on the long holds but scores 0 by construction at every turning
+    # point -- exactly where a forecast has value. Report both.
+    chg = np.concatenate([[False], y[1:] != y[:-1]])
+    acc_chg = {k: _acc(p, y, m22 & chg) for k, p in preds.items()}
+    n_chg = int((m22 & chg & (preds["PBI"] != 99)).sum())
+    print(f"  at decision changes (n={n_chg}): PBI={acc_chg['PBI']:.2f}  persist.={acc_chg['persist.']:.2f}"
+          f"  macro={acc_chg['macro']:.2f}  Taylor={acc_chg['Taylor']:.2f}")
+
     tgt = np.array([macro.macro_briefing(series, d)[0]["target_upper"] for d in dates])
 
-    # Lead-lag: the PBI leads the funds-rate LEVEL. Sliding the index forward monotonically raises its
-    # correlation with the target, peaking ~6 meetings (~3 quarters) ahead. Computed over the full
-    # series (level-tracking is a whole-sample property).
-    ll_shifts = np.arange(-2, 9)
+    # Lead-lag: the PBI leads the funds-rate LEVEL. Scanned wide enough that the peak is interior, and
+    # against two controls that could inherit the same profile mechanically: raw CPI (which led the
+    # funds rate this cycle and sits in the personas' briefing c^(t)) and the no-briefing (static)
+    # index. If the PBI's profile only matched the controls, "the PBI leads" would deflate to "the Fed
+    # reacts to inflation with a lag."
+    ll_shifts = np.arange(-2, 13)
     ll_r, ll_tau = _lead_lag(idx, tgt, ll_shifts)
+    _, cpi_tau = _lead_lag(cpi, tgt, ll_shifts)
+    _, noc_tau = _lead_lag(noc_idx, tgt, ll_shifts)
     kbest = int(ll_shifts[np.nanargmax(ll_tau)])
-    print(f"  lead-lag vs target: contemporaneous r={ll_r[list(ll_shifts).index(0)]:.2f} "
-          f"tau={ll_tau[list(ll_shifts).index(0)]:.2f} ; best +{kbest} mtgs "
-          f"r={np.nanmax(ll_r):.2f} tau={np.nanmax(ll_tau):.2f}")
+    i0 = list(ll_shifts).index(0)
+    print(f"  lead-lag vs target: contemporaneous r={ll_r[i0]:.2f} tau={ll_tau[i0]:.2f} ; "
+          f"peak +{kbest} mtgs tau={np.nanmax(ll_tau):.2f} "
+          f"(controls at +{kbest}: CPI tau={cpi_tau[list(ll_shifts).index(kbest)]:.2f}, "
+          f"static tau={noc_tau[list(ll_shifts).index(kbest)]:.2f})")
 
-    _plot(dates, idx, tgt, labels, accs, base, (ll_shifts, ll_r, ll_tau))
+    _plot(dates, idx, tgt, labels, accs, base, (ll_shifts, ll_tau, cpi_tau, noc_tau),
+          (acc_chg["PBI"], n_chg))
     print(f"wrote {FIG/'fig_index.pdf'}  (PBI acc={accs['PBI']:.2f} vs base {base:.2f})")
 
 
-def _plot(dates, idx, tgt, labels, accs, base, leadlag):
+def _plot(dates, idx, tgt, labels, accs, base, leadlag, chg_stat=None):
     x = [np.datetime64(d) for d in dates]
     fig = plt.figure(figsize=(7.4, 4.45))
     gs = fig.add_gridspec(2, 3, height_ratios=[1.0, 1.02], width_ratios=[1.0, 1.28, 1.02],
@@ -337,29 +380,32 @@ def _plot(dates, idx, tgt, labels, accs, base, leadlag):
     axb.set_xticklabels(order, fontsize=6, rotation=35, ha="right", rotation_mode="anchor")
     axb.set_ylim(0, .92); axb.set_ylabel("OOS accuracy", fontsize=7); axb.tick_params(labelsize=6)
     axb.set_title("(c) decision accuracy vs. baselines", fontsize=8)
+    if chg_stat is not None:                                     # persistence wins the holds, not the turns
+        axb.text(.02, .96, f"at decision changes (n={chg_stat[1]}):\nPBI {chg_stat[0]:.2f}, persist. 0.00",
+                 transform=axb.transAxes, fontsize=5.2, va="top", color="0.25",
+                 bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="0.8", lw=.5))
 
-    # (d) lead-lag: correlation of the PBI with the fed-funds target level as the index is slid forward.
-    # The monotonic rise is the story -- the PBI anticipates where the committee walks the rate.
+    # (d) lead-lag: Kendall tau of each series with the fed-funds target level as the series is slid
+    # forward. The PBI's profile vs two mechanical controls: raw CPI (in the personas' briefing, and a
+    # natural leader of the rate this cycle) and the static (no-briefing) index.
     axd = fig.add_subplot(gs[1, 2])
-    shifts, ll_r, ll_tau = leadlag
-    axd.axvspan(0, shifts.max() + .4, color=RED, alpha=.05)      # "PBI leads" region
+    shifts, ll_tau, cpi_tau, noc_tau = leadlag
+    axd.axvspan(0, shifts.max() + .4, color=RED, alpha=.05)      # "leads" region
     axd.axvline(0, color="k", lw=.7, alpha=.45)
-    axd.plot(shifts, ll_r, "--o", color="#888", lw=1.0, ms=2.3, label=r"Pearson $r$")
-    axd.plot(shifts, ll_tau, "-o", color=RED, lw=1.5, ms=3.0, label=r"Kendall $\tau$")
-    i0 = list(shifts).index(0)
-    axd.annotate("contemp.", xy=(0, ll_tau[i0]), xytext=(-2.0, .12), fontsize=5, color="0.35",
-                 arrowprops=dict(arrowstyle="->", color="0.5", lw=.6))
-    if 6 in shifts:                                              # mark the ~3-quarter lead
-        i6 = list(shifts).index(6)
-        axd.annotate(rf"$\tau{{=}}{ll_tau[i6]:.2f}$", xy=(6, ll_tau[i6]), xytext=(6, ll_tau[i6] + .07),
-                     fontsize=5.6, color=RED, ha="center")
-    axd.text(shifts.max(), .045, "PBI leads $\\rightarrow$", ha="right", va="bottom", fontsize=5.6,
-             color=RED, style="italic")
-    axd.set_xlabel("PBI lead (meetings)", fontsize=7)
-    axd.set_ylabel("corr. w/ target level", fontsize=7)
+    axd.plot(shifts, cpi_tau, ":", color="#999", lw=1.1, label="CPI (control)")
+    axd.plot(shifts, noc_tau, "--", color=BLUE, lw=1.0, alpha=.75, label="static idx (control)")
+    axd.plot(shifts, ll_tau, "-o", color=RED, lw=1.5, ms=2.6, label="PBI")
+    kbest = int(shifts[np.nanargmax(ll_tau)])
+    ib = list(shifts).index(kbest)
+    axd.annotate(rf"$\tau{{=}}{ll_tau[ib]:.2f}$ at +{kbest}", xy=(kbest, ll_tau[ib]),
+                 xytext=(kbest - .5, min(ll_tau[ib] + .1, .93)), fontsize=5.6, color=RED, ha="center")
+    axd.text(shifts.max(), .045, "series leads $\\rightarrow$", ha="right", va="bottom", fontsize=5.6,
+             color="0.35", style="italic")
+    axd.set_xlabel("lead (meetings)", fontsize=7)
+    axd.set_ylabel(r"Kendall $\tau$ w/ target level", fontsize=7)
     axd.set_title("(d) the PBI leads the rate level", fontsize=8)
-    axd.set_ylim(0, .98); axd.set_xticks(range(-2, 9, 2)); axd.tick_params(labelsize=6)
-    axd.legend(fontsize=5.4, loc="lower right", handlelength=1.3, framealpha=.85)
+    axd.set_ylim(0, .98); axd.set_xticks(range(-2, 13, 2)); axd.tick_params(labelsize=6)
+    axd.legend(fontsize=5.2, loc="lower right", handlelength=1.5, framealpha=.85)
 
     fig.savefig(FIG / "fig_index.pdf", bbox_inches="tight"); plt.close(fig)
 
