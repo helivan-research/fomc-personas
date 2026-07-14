@@ -83,8 +83,8 @@ Each `paper/fig_*.py` is self-contained: it loads the data, regenerates any inte
 - **cheap (embeddings only, ~cents)** — `fig_likeness.py` / `fig_stance.py` after a first run has
   cached the generations; first run of each is a few dollars of `gpt-4o-mini`.
 - **the costly one** — `fig_index.py`: per-meeting generation across the historical roster
-  (~10k+ generations for the PBI pass; the CV in `experiments/retrieval_cv.py` is a full pass *per
-  (beta, tau) setting*). With the caches under `paper/.cache/retrieval_cv/beta0.6_tau2.0_pit/` and
+  (~10k+ generations for the PBI pass; the sensitivity grid in `experiments/cv_pit.py` is a full
+  pass *per setting*). With the caches under `paper/.cache/retrieval_cv/beta0.0_tau2.0_pit/` and
   `paper/.cache/figure_index_pit/` present it replots in seconds with no paid calls. Note that a
   fresh regeneration is *stochastic* (temperature 0.2), so exact headline numbers reproduce only
   from the caches.
@@ -96,16 +96,20 @@ classifier on the committee index + its momentum: train on meetings 1..i-1, pred
 starting at meeting 17; the evaluation window is 2022+ (n≈32). Retrieval is point-in-time
 (`_public_asof`: embargoed transcripts dated at release; strict day-before cutoff). Current numbers:
 
-- **OOS accuracy 0.66** vs a 0.47 majority-class base rate. The **persistence baseline
-  ("repeat the last decision") scores 0.78** on this hold-heavy window — but 0.00 at the 7
-  decision *changes*, where the PBI scores 0.29 (Taylor 0.43); no signal is good at turns yet.
+- **OOS accuracy 0.69** (0.72 restricted to voting members) vs a 0.47 majority-class base rate.
+  The **persistence baseline ("repeat the last decision") scores 0.78** on this hold-heavy window —
+  but 0.00 at the 7 decision *changes*, where the PBI scores 0.29 (Taylor 0.43); no signal is good
+  at turns yet.
 - **Lead-lag (the main result):** slid forward, the PBI's Kendall tau against the funds-rate
-  *level* rises from 0.38 (contemporaneous) to **~0.79 at +9 meetings (~3 quarters)**, exceeding
-  both a raw-CPI control (0.67) and the no-briefing static index (0.57) at the same lead.
-- **Discrimination (2022+):** hike-vs-rest AUC 0.98, cut-vs-rest AUC 0.83.
-- **Selection caveat:** the retrieval weighting (beta=0.6, tau=2yr) was chosen by
-  `experiments/retrieval_cv.py` on the *same* 2022+ window, so cross-setting deltas are
-  in-sample-selected; treat them as sensitivity analysis, not out-of-sample gains.
+  *level* rises from 0.42 (contemporaneous) to **0.84 at +8 meetings (~3 quarters)** — block-
+  bootstrap 95% CI [0.65, 0.87], with the rise itself significant ([0.15, 0.89]) — exceeding both a
+  raw-CPI control (0.63) and the no-briefing static index (0.60), the CPI margin significant
+  ([0.05, 0.49]).
+- **Discrimination (2022+):** hike-vs-rest AUC 1.00, cut-vs-rest AUC 0.81.
+- **Retrieval has no tuned hyperparameter:** ranking is pure embedding relevance. Recency-weighted
+  variants (`experiments/cv_pit.py` grid) appeared to help only under the leaked corpus — the gain
+  was an artifact of up-weighting embargoed transcripts — and pure relevance is best on both the
+  evaluation window and the post-LLM-cutoff validation split.
 
 ## License
 
