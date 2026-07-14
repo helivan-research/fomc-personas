@@ -16,13 +16,16 @@ The repository contains:
 
 The chunk corpus and embeddings are published as a Hugging Face dataset —
 **[`helivan/fomc-personas`](https://huggingface.co/datasets/helivan/fomc-personas)** — which this
-library downloads on demand (`load_chunks(embeddings="cached")`).
+library downloads on demand (`load_chunks(embeddings="cached")`). The dataset is **gated**: you need
+a (free) Hugging Face account and a one-click agreement to its terms on the dataset page (access is
+granted automatically), plus an authenticated session locally (`huggingface-cli login` or `HF_TOKEN`).
 
 ## Quickstart
 
 ```bash
 pip install -r requirements.txt
 export OPENAI_API_KEY=sk-...          # your own key
+huggingface-cli login                 # the dataset is gated: accept its terms on the HF page first
 
 python paper/fig_data.py             # Figure 1 — corpus composition (no API key needed)
 python paper/fig_likeness.py         # Figure 2 — persona likeness
