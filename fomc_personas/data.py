@@ -14,14 +14,13 @@ import json
 import os
 from pathlib import Path
 
-import pandas as pd
-
 HF_REPO = os.environ.get("FOMC_HF_REPO", "helivan/fomc-personas")
 _DATA = Path(os.environ.get("FOMC_DATA_DIR", Path(__file__).resolve().parent.parent / "data"))
 _LOCAL = os.environ.get("FOMC_LOCAL_DATASET")  # optional dir of parquet shards (dev)
 
 
-def _load_config(config: str) -> pd.DataFrame:
+def _load_config(config: str) -> "pd.DataFrame":
+    import pandas as pd  # lazy: keep module import pandas-free
     """Return the `chunks` or `embeddings` table as a DataFrame (local shards if set, else HF)."""
     if _LOCAL:
         shards = sorted(Path(_LOCAL).glob(f"{config}/*.parquet"))
@@ -32,7 +31,8 @@ def _load_config(config: str) -> pd.DataFrame:
     return load_dataset(HF_REPO, config, split="train").to_pandas()
 
 
-def load_chunks(embeddings: str = "cached") -> pd.DataFrame:
+def load_chunks(embeddings: str = "cached") -> "pd.DataFrame":
+    import pandas as pd  # lazy
     """Load the chunk corpus as a DataFrame.
 
     embeddings:

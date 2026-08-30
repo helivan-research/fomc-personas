@@ -8,7 +8,6 @@ by Kendall's tau-b against an external news-derived hawk->dove reputational orde
 from __future__ import annotations
 
 import numpy as np
-from scipy import stats as sstats
 
 from .embeddings import embed
 
@@ -27,6 +26,7 @@ def project(reps: dict, u: np.ndarray) -> dict:
 def kendall_vs_external(scores: dict, external: list):
     """Rank members by score (desc = hawkish); Kendall tau-b vs the external hawk->dove ordering.
     Returns (ranked_members, tau, p)."""
+    from scipy import stats as sstats   # lazy: keep module import scipy-free
     ranked = sorted(scores, key=lambda n: -scores[n])
     ext_rank = {n: i for i, n in enumerate(external)}
     pr = {n: i for i, n in enumerate(ranked)}
