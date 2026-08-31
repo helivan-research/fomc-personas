@@ -42,7 +42,8 @@ htmlcov/
 .nox/
 .coverage
 .coverage.*
-.cache
+.cache/*
+!.cache/fred/
 nosetests.xml
 coverage.xml
 *.cover
@@ -221,11 +222,23 @@ __marimo__/
 # Precomputed chunk embeddings: a ~100 MB hosted asset, fetched on demand into the
 # gitignored cache (load_chunks(embeddings="cached")). Not committed.
 data/embeddings.parquet
-# Regenerated figure intermediates (embeddings, generations, computed stats).
-paper/.cache/
+# Figure intermediates are regenerated EXCEPT the published generation caches, which are
+# committed: the site index and the paper's headline numbers rebuild from them deterministically,
+# and CI (scripts/update_index.py) extends them per completed FOMC meeting.
+paper/.cache/*
+!paper/.cache/retrieval_cv/
+paper/.cache/retrieval_cv/*
+!paper/.cache/retrieval_cv/beta0.0_tau2.0_pit/
+!paper/.cache/figure_index_pit/
 # Working copy of the HF dataset used by data/scrape/build_dataset.py (--pull/--push).
 data/.hf_dataset/
 # Scraper intermediates (raw scraped JSON + BIS slug cache); regenerated, never committed.
 data/fed/
 # Local API keys / env
 .env
+
+# Personal (non-paper) trading-signal exploration: PBI vs prediction markets.
+# Conclusion: no alpha (market leads all persona signals). Kept local, out of the paper.
+paper/experiments/market/
+paper/figures/fig_market.pdf
+paper/figures/fig_yearahead.pdf

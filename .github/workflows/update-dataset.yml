@@ -13,6 +13,12 @@ name: Update HF dataset
 #   RAILWAY_TOKEN       — a Railway *project* token (Railway → project → Settings → Tokens)
 #   RAILWAY_SERVICE_ID  — the web service's ID (Railway → service → Settings, or from the URL)
 # Both unset -> the redeploy step is skipped.
+#
+# Optional, to auto-extend the live index after each completed FOMC meeting (scripts/update_index.py
+# generates the new meeting's persona responses, then the site's pbi.json is re-exported and pushed
+# to the web repo, which Railway deploys):
+#   WEB_PUSH_TOKEN      — fine-grained PAT with contents:write on helivan-research/fomc-personas-web
+# Unset -> caches still update in this repo; the site publish step is skipped.
 
 on:
   schedule:
@@ -20,7 +26,7 @@ on:
   workflow_dispatch: {}    # allow manual runs
 
 permissions:
-  contents: read
+  contents: write   # push updated generation caches back to this repo after an index update
 
 concurrency:
   group: update-dataset
@@ -69,3 +75,43 @@ jobs:
           fi
           npm install -g @railway/cli
           railway redeploy --service "$RAILWAY_SERVICE_ID" --yes
+
+      # --- live index: extend over newly-completed FOMC meetings -------------------------------
+      # Generates persona responses ONLY for completed meetings missing from the committed caches
+      # (a week with no new meeting does no OpenAI work), commits the caches back to this repo,
+      # then re-exports the website's pbi.json and pushes it to the web repo (Railway deploys it).
+      - name: Update index caches for newly-completed FOMC meetings
+        id: index
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python scripts/update_index.py
+
+      - name: Commit updated index caches
+        if: steps.index.outputs.new_meetings == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .cache/fred paper/.cache/retrieval_cv/beta0.0_tau2.0_pit paper/.cache/figure_index_pit
+          git commit -m "index update: generation caches for newly-completed FOMC meeting(s)" || exit 0
+          git push
+
+      - name: Export and publish the site index
+        if: steps.index.outputs.new_meetings == 'true'
+        env:
+          WEB_PUSH_TOKEN: ${{ secrets.WEB_PUSH_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$WEB_PUSH_TOKEN" ]; then
+            echo "WEB_PUSH_TOKEN not set — skipping site index publish."
+            exit 0
+          fi
+          git clone --depth 1 "https://x-access-token:${WEB_PUSH_TOKEN}@github.com/helivan-research/fomc-personas-web.git" ../fomc-personas-web
+          cd ../fomc-personas-web
+          python scripts/export_pbi.py
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/pbi.json
+          git commit -m "index: add newly-completed FOMC meeting(s)" || exit 0
+          git push

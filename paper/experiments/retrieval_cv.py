@@ -54,8 +54,8 @@ if os.environ.get("OPENAI_API_KEY"):
 CACHE = ROOT / "paper" / ".cache" / "retrieval_cv"
 CACHE.mkdir(parents=True, exist_ok=True)
 TOPK = 3
-# Match the live website window (paper's frozen 2018-2025 list + the completed 2026 meetings).
-LIVE_MEETINGS = ["2026-01-28", "2026-03-18", "2026-04-29", "2026-06-17"]
+# The live website window = the paper's frozen 2018-2025 list + completed post-window meetings
+# (macro.completed_live_meetings: date passed AND outcome visible in the FRED target series).
 
 
 def _z(x: np.ndarray) -> np.ndarray:
@@ -150,7 +150,7 @@ def main():
     tau = float(next((a.split("=")[1] for a in sys.argv[1:] if a.startswith("--tau=")), 2.0))
     betas = [float(a) for a in args] or [0.6, 1.5]
 
-    macro.FOMC_MEETINGS = list(macro.FOMC_MEETINGS) + LIVE_MEETINGS
+    macro.FOMC_MEETINGS = list(macro.FOMC_MEETINGS) + macro.completed_live_meetings()
     df = fp.load_chunks(embeddings="cached")
     bios = fp.load_bios()
     u = fp.axis(fp.load_anchors())

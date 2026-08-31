@@ -34,6 +34,59 @@ FRED_SERIES = {
     "unrate": "UNRATE",     # unemployment rate (monthly, %)
 }
 
+# Decision (second-day) dates of scheduled FOMC meetings AFTER the paper's frozen 2018-2025 window.
+# The live index (website) extends over the completed subset of these; the paper's FOMC_MEETINGS
+# list above is never modified. Source: federalreserve.gov tentative meeting calendars.
+LIVE_DECISIONS = [
+    "2026-01-28", "2026-03-18", "2026-04-29", "2026-06-17", "2026-07-29",
+    "2026-09-16", "2026-10-28", "2026-12-09",
+    "2027-01-27", "2027-03-17", "2027-04-28", "2027-06-09", "2027-07-28",
+    "2027-09-15", "2027-10-27", "2027-12-08",
+]
+
+
+def completed_live_meetings(series=None, today=None):
+    """Live decision dates that have concluded AND whose outcome is observable in the FRED target
+    series (an observation on/after the decision date). The second condition is what prevents a
+    not-yet-decided meeting from being mislabeled 'hold' by the as-of target fallback."""
+    import datetime as _dt
+    if series is None:
+        series = load_fred()
+    today = today or _dt.date.today().isoformat()
+    last_obs = max(series.get("target") or [""])
+    out = [d for d in LIVE_DECISIONS if d <= today and d <= last_obs]
+    if today > LIVE_DECISIONS[-1]:
+        print(f"! FOMC calendar exhausted ({LIVE_DECISIONS[-1]}) -- extend macro.LIVE_DECISIONS")
+    return out
+
+
+def refresh_fred(y0=2025, y1=None):
+    """Merge NEW FRED observations into the local cache; existing values are left byte-identical so
+    the paper's cached series are never disturbed. Best-effort: a network failure leaves the cache
+    as-is."""
+    import datetime as _dt
+    y1 = y1 or _dt.date.today().year
+    CACHE.mkdir(parents=True, exist_ok=True)
+    for name, sid in FRED_SERIES.items():
+        cp = CACHE / f"{name}.json"
+        existing = json.loads(cp.read_text()) if cp.exists() else {}
+        try:
+            if name == "target":                        # daily -> fetch year by year (long ranges 404)
+                fresh = {}
+                for y in range(y0, y1 + 1):
+                    fresh.update(_fred(sid, f"{y}-01-01", f"{y}-12-31"))
+            else:                                        # monthly
+                fresh = _fred(sid, f"{y0}-01-01", f"{y1}-12-31")
+        except Exception as e:                           # pragma: no cover - network hiccup
+            print(f"  ! could not refresh {name}: {e}")
+            continue
+        added = sorted(k for k in fresh if k not in existing)
+        existing.update({k: fresh[k] for k in added})
+        cp.write_text(json.dumps(existing))
+        if added:
+            print(f"  + {name}: {len(added)} new obs (through {max(existing)})")
+
+
 
 def _fred(series_id, start="2016-01-01", end="2025-12-31"):
     """Fetch a FRED series as a {date: float} dict via the public CSV endpoint."""
