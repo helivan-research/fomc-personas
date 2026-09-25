@@ -230,6 +230,10 @@ paper/.cache/*
 paper/.cache/retrieval_cv/*
 !paper/.cache/retrieval_cv/beta0.0_tau2.0_pit/
 !paper/.cache/figure_index_pit/
+!paper/.cache/cut_battery/
+!paper/.cache/cut_battery_b0.6/
+!paper/.cache/hike_battery_b0.6/
+!paper/.cache/vote_parse/
 # Working copy of the HF dataset used by data/scrape/build_dataset.py (--pull/--push).
 data/.hf_dataset/
 # Scraper intermediates (raw scraped JSON + BIS slug cache); regenerated, never committed.
