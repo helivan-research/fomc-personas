@@ -235,6 +235,10 @@ paper/.cache/retrieval_cv/*
 !paper/.cache/hike_battery_b0.6/
 !paper/.cache/vote_parse/
 !paper/.cache/fomc_votes/
+!paper/.cache/cut_battery_gpt_41_mini/
+!paper/.cache/hike_battery_gpt_41_mini/
+!paper/.cache/vote_parse_gpt_41_mini/
+!paper/.cache/answer_audit/
 # Working copy of the HF dataset used by data/scrape/build_dataset.py (--pull/--push).
 data/.hf_dataset/
 # Scraper intermediates (raw scraped JSON + BIS slug cache); regenerated, never committed.

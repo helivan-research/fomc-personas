@@ -52,7 +52,9 @@ from fomc_personas import macro, persona, roles  # noqa: E402
 import fig_index as F                  # noqa: E402
 from retrieval_cv import retrieve_weighted, WORKERS  # noqa: E402
 
-BETA = float(sys.argv[1]) if len(sys.argv) > 1 else 0.0
+BETA = 0.0
+if __name__ == "__main__" and len(sys.argv) > 1:      # argv only when run directly (importable otherwise)
+    BETA = float(sys.argv[1])
 CACHE = ROOT / "paper" / ".cache" / ("cut_battery" if BETA == 0.0 else f"cut_battery_b{BETA}")
 CACHE.mkdir(parents=True, exist_ok=True)
 TOPK = 3

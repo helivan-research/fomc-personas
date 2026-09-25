@@ -1,0 +1,80 @@
+[GROUNDED] Michelle W. Bowman @ 2024-05-01 (cut q1)
+  answer: No, the Committee should not begin lowering the federal funds rate at its next meeting. Given that inflation remains above our 2 percent target and the labor market is still tight, I believe we need to maintain or potentially increase rates to effectively address inflationary pressures.
+  judge: The answer aligns with the member's emphasis on maintaining or increasing rates due to inflation above target and a tight labor market, consistent with the retrieved statements and current economic data.
+
+[ERROR] Michael S. Barr @ 2024-11-07 (hike q1)
+  answer: Given the current inflation rates and the need to maintain a sufficiently restrictive monetary policy, I believe the Committee should consider raising the federal funds rate at its next meeting to ensure we remain on track toward our 2 percent inflation target. However, any decision should be contingent on the latest economic data and its implications for credit conditions.
+  judge: The retrieved statements emphasize uncertainty about additional rate increases this year and focus on holding rates restrictive rather than explicitly supporting a rate hike now, making the clear recommendation to raise rates inconsistent with the retrieved views.
+
+[GROUNDED] John C. Williams @ 2025-03-19 (cut q5)
+  answer: Yes, the time has come to dial back policy restraint, as the current economic conditions suggest a need for a more accommodative stance to support growth while keeping inflation expectations anchored. However, we must communicate that there is no presumption of further cuts, as we assess the evolving economic landscape.
+  judge: The answer aligns with the retrieved statements about a more accommodative stance and no presumption of further cuts, and is consistent with the briefing's economic data without inventing specifics.
+
+[GROUNDED] John C. Williams @ 2019-10-30 (hike q5)
+  answer: Given the current economic conditions, including below-target inflation and persistent headwinds to aggregate demand, the time has not come to firm the policy stance further; rather, we should continue to pursue substantial monetary accommodation to support the economy. Strengthening our forward guidance is essential to foster confidence and stimulate demand.
+  judge: The answer aligns with the retrieved statements emphasizing continued accommodation and strengthening forward guidance, and is consistent with the briefing's data showing below-target inflation and economic headwinds.
+
+[ERROR] Lorie K. Logan @ 2024-11-07 (hike q5)
+  answer: Given the current inflation rates exceeding our target and the unemployment rate remaining relatively low, I believe the time has come to firm the policy stance further to ensure we effectively address inflationary pressures while maintaining economic stability. A gradual approach to tightening will help us assess the impact on the economy without risking an unintended boost to inflation.
+  judge: The retrieved statements emphasize a gradual lowering of rates and caution against tightening, which contradicts the answer advocating firming the policy stance further given current inflation and unemployment.
+
+[GROUNDED] Jerome H. Powell @ 2023-05-03 (cut q2)
+  answer: Given the current inflation rates and the modestly restrictive stance of monetary policy, it is prudent for the Committee to wait for more data before considering any easing of policy. We must assess the impact of our cumulative adjustments on the economy and inflation before making further decisions.
+  judge: The answer aligns with the retrieved statements emphasizing waiting for more data and assessing cumulative policy effects, and it correctly references current inflation and policy stance without inventing specifics.
+
+[GROUNDED] Lisa D. Cook @ 2024-11-07 (hike q4)
+  answer: Given that core PCE inflation remains above our 2 percent target and the unemployment rate is relatively low, I would support a 25 basis point hike at the coming meeting to reinforce our commitment to bringing inflation back to target. It is crucial to ensure that inflation is on a sustainable downward path before considering any rate cuts.
+  judge: The answer aligns with the member's commitment to reducing inflation to 2%, references current inflation and unemployment data consistent with the briefing, and reflects the member's cautious stance on rate cuts as per the retrieved statements.
+
+[GROUNDED] Jerome H. Powell @ 2021-04-28 (hike q3)
+  answer: Given the current economic conditions, including elevated inflation and a still-high unemployment rate, it is not urgent to increase the current level of policy restriction. Our focus should remain on supporting the recovery and addressing the ongoing uncertainties related to the pandemic.
+  judge: The answer aligns with the retrieved statements emphasizing uncertainty and the need for support, and correctly reflects the briefing's data showing elevated inflation but still-high unemployment, justifying no urgent policy tightening.
+
+[GROUNDED] Lorie K. Logan @ 2024-09-18 (hike q2)
+  answer: Given that core PCE inflation remains above our 2% target and the unemployment rate is still relatively low, it is appropriate for the Committee to consider tightening policy further to ensure inflation returns to target in a sustainable manner. However, we should also remain flexible and assess incoming data to determine the timing and extent of any additional actions.
+  judge: The answer aligns with the member's emphasis on assessing data flexibly and considering further tightening given inflation above target and low unemployment, consistent with the retrieved statements and briefing data.
+
+[GROUNDED] John C. Williams @ 2023-11-01 (hike q1)
+  answer: Yes, the Committee should raise the federal funds rate at its next meeting to address persistent inflationary pressures and to move closer to our 2% target. Gradually increasing rates is essential for normalizing monetary policy in the current economic environment.
+  judge: The answer aligns with the member's retrieved statements supporting a rate hike and gradual increases to normalize policy, consistent with the briefing's inflation and rate data without inventing specifics.
+
+[GROUNDED] John C. Williams @ 2023-03-22 (cut q2)
+  answer: Given the current inflation rates significantly above our 2% target and the solid labor market, it is not appropriate to start easing policy now; we must remain vigilant and wait for more data to ensure that inflation is on a sustainable downward path. Continuing to reduce policy accommodation is necessary to mitigate potential vulnerabilities in the economy.
+  judge: The answer aligns with the retrieved statements emphasizing the need to continue reducing accommodation given inflation above target and solid labor market, without inventing specifics beyond the briefing data.
+
+[GROUNDED] Michelle W. Bowman @ 2020-06-10 (hike q1)
+  answer: Given the current economic conditions, including high unemployment and low inflation rates, the Committee should not raise the federal funds rate at its next meeting. Instead, we should focus on supporting economic recovery and consider strategies to allow inflation to exceed our target temporarily to address the shortfall.
+  judge: The answer aligns with the retrieved statements about considering strategies to let inflation exceed target temporarily and matches the briefing's economic conditions of low inflation and high unemployment, supporting no rate hike.
+
+[ERROR] John C. Williams @ 2020-06-10 (cut q2)
+  answer: Given the substantial labor market slack and inflation running well below our 2% target, it is appropriate to continue easing policy now to support the economy. Waiting for more data could risk further entrenching these unfavorable conditions.
+  judge: The retrieved statements emphasize maintaining current policy and forward guidance rather than starting easing now, and the briefing shows the funds rate already at a low 0.25%, so recommending further easing contradicts the record and invents a policy stance not supported by the retrieved data.
+
+[ERROR] John C. Williams @ 2025-09-17 (cut q4)
+  answer: Yes, I would support a 25 basis point cut at the coming meeting to address the current inflation rate and unemployment levels while aiming to achieve our symmetric 2 percent inflation goal. This action is necessary to offset potential negative shocks and ensure continued economic stability.
+  judge: The answer supports a rate cut despite current inflation (3.0% CPI, 2.8% core PCE) being above the 2% target and the retrieved statements indicating cuts are contingent on a worsening outlook, which is not reflected in the briefing.
+
+[GROUNDED] Jerome H. Powell @ 2024-11-07 (cut q4)
+  answer: Given the current inflation rate of 2.7% year over year and a core PCE inflation of 3.0%, I would not support a 25 basis point cut at the coming meeting, as inflation remains above our target and the labor market is still relatively strong. We must prioritize achieving our inflation target before considering any reductions in the policy rate.
+  judge: The answer aligns with the retrieved statements emphasizing data-dependent rate cuts and the briefing's inflation and labor market data, showing no invented specifics or contradictions.
+
+[GROUNDED] John C. Williams @ 2025-09-17 (hike q3)
+  answer: Given the current economic conditions, it is not urgent to increase the level of policy restriction, as inflation is moderating and the unemployment rate remains manageable. Instead, a more accommodative stance is warranted to support continued economic growth and mitigate recession risks.
+  judge: The answer aligns with the retrieved statements advocating a more accommodative policy given recession risks and matches the briefing's data showing moderating inflation and manageable unemployment without introducing unsupported specifics.
+
+[GROUNDED] John C. Williams @ 2019-01-30 (cut q5)
+  answer: Given the current economic conditions, including inflation running below our target and a stable unemployment rate, the time has not yet come to dial back policy restraint; we must maintain substantial monetary accommodation to support the economy. It is crucial to avoid inadvertently tightening financial market conditions as we navigate these uncertainties.
+  judge: The answer aligns with the retrieved statements emphasizing substantial accommodation and caution against tightening, and is consistent with the briefing's inflation and unemployment data without adding unsupported specifics.
+
+[GROUNDED] Michelle W. Bowman @ 2022-07-27 (cut q1)
+  answer: No, the Committee should not begin lowering the federal funds rate at its next meeting. Given the persistently high inflation rates, it is crucial to maintain a tighter monetary policy to address these inflationary pressures.
+  judge: The answer aligns with the retrieved statements supporting rate increases due to high inflation and is consistent with the briefing's inflation data indicating the need for tighter policy.
+
+[GROUNDED] Neel Kashkari @ 2025-03-19 (hike q4)
+  answer: Yes, I would support a 25 basis point hike at the coming meeting, as inflation remains above our target and the labor market is still relatively strong. It is essential to take proactive measures to ensure inflation expectations remain anchored.
+  judge: The answer aligns with the retrieved statements supporting a 25 basis point hike and references inflation above target and a strong labor market consistent with the briefing data without adding invented specifics.
+
+[GROUNDED] Jerome H. Powell @ 2021-11-03 (cut q4)
+  answer: I would not support a 25 basis point cut at the coming meeting given the current inflation rates significantly exceeding our 2% target and the need to prioritize price stability. Instead, I believe we should consider raising the federal funds rate to address these inflationary pressures.
+  judge: The answer aligns with the retrieved statements supporting rate increases given high inflation and the briefing showing inflation well above target, justifying no rate cut and consideration of a rate hike.
+
