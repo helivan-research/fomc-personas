@@ -139,6 +139,68 @@ def parse_votes(direction: str, cache_dir: Path):
     return out
 
 
+def generate_battery_at(df, bios, series, battery, meeting, out_path, asof=None):
+    """Answer `battery` for one meeting and cache it at out_path (no-op if cached).
+
+    asof=None reproduces the backtest exactly (point-in-time corpus and briefing as of the
+    meeting). asof=<date> is the LIVE forecast for a meeting that has not happened yet: corpus
+    restricted to statements public before `asof`, briefing as of `asof`, roster as of `asof`."""
+    out_path = Path(out_path)
+    if out_path.exists():
+        return json.loads(out_path.read_text())
+    cutoff = asof or meeting
+    df_t = F._public_asof(df, cutoff)
+    rost = [m for m in F._roster(df_t) if roles.office_at(m, cutoff) is not None]
+    if not rost:
+        return None
+    _, briefing = macro.macro_briefing(series, cutoff)
+    qv = fp.embed(battery)
+    tT = pd.Timestamp(cutoff)
+    metas, messages = [], []
+    for m in rost:
+        g = df_t[df_t["member"] == m]
+        emb = np.vstack(g["embedding"].values)
+        texts = g["text"].values
+        ages = (tT - pd.to_datetime(g["postedAt"], errors="coerce")).dt.days.values / 365.25
+        sys_p = persona.system_prompt(m, bios.get(m, ""))
+        for qi, q in enumerate(battery):
+            retr = retrieve_weighted(emb, ages, qv[qi], texts, TOPK, beta=BETA, tau=TAU)
+            metas.append((m, qi))
+            messages.append([{"role": "system", "content": sys_p},
+                             {"role": "user", "content": persona.index_prompt(q, retr, briefing)}])
+    comps = persona.generate(messages, workers=WORKERS)
+    resp = {m: [""] * len(battery) for m in rost}
+    for (m, qi), c in zip(metas, comps):
+        resp[m][qi] = c
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(resp))
+    return resp
+
+
+def parse_file(direction: str, resp_path, parse_path):
+    """Parse one cached battery response file into support/oppose/unclear votes (cached)."""
+    parse_path = Path(parse_path)
+    if parse_path.exists():
+        return json.loads(parse_path.read_text())
+    resp = json.loads(Path(resp_path).read_text())
+    metas, messages = [], []
+    for m, answers in resp.items():
+        for qi, a in enumerate(answers):
+            if a:
+                metas.append((m, qi))
+                messages.append([{"role": "user", "content": PARSE_PROMPT.format(
+                    action=ACTIONS[direction], answer=a)}])
+    labels = persona.generate(messages, workers=WORKERS, max_tokens=4)
+    parsed = {}
+    for (m, qi), lab in zip(metas, labels):
+        low = (lab or "").lower()
+        parsed.setdefault(m, {})[str(qi)] = ("support" if "support" in low
+                                             else "oppose" if "oppose" in low else "unclear")
+    parse_path.parent.mkdir(parents=True, exist_ok=True)
+    parse_path.write_text(json.dumps(parsed))
+    return parsed
+
+
 def share(parsed_meeting) -> float:
     votes = [v for m in parsed_meeting.values() for v in m.values() if v != "unclear"]
     return float(np.mean([v == "support" for v in votes])) if votes else np.nan

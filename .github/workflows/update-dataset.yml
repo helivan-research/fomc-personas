@@ -14,16 +14,23 @@ name: Update HF dataset
 #   RAILWAY_SERVICE_ID  — the web service's ID (Railway → service → Settings, or from the URL)
 # Both unset -> the redeploy step is skipped.
 #
-# Optional, to auto-extend the live index after each completed FOMC meeting (scripts/update_index.py
-# generates the new meeting's persona responses, then the site's pbi.json is re-exported and pushed
-# to the web repo, which Railway deploys):
+# The weekly INDEX job (scripts/update_index.py) runs after the refresh job WHATEVER its outcome --
+# a slow or failed scrape must never block the index. It extends the index over newly-completed FOMC
+# meetings, re-forecasts the next meeting from this week's data, commits the caches, and pushes the
+# site's pbi.json to the web repo (Railway deploys on that push, which also re-syncs the corpus):
 #   WEB_PUSH_TOKEN      — fine-grained PAT with contents:write on helivan-research/fomc-personas-web
 # Unset -> caches still update in this repo; the site publish step is skipped.
+# Manual run with index_only=true skips the ~1.5h scrape (e.g. right after an FOMC meeting).
 
 on:
   schedule:
     - cron: '0 6 * * 1'   # Mondays 06:00 UTC
-  workflow_dispatch: {}    # allow manual runs
+  workflow_dispatch:
+    inputs:
+      index_only:
+        description: 'Skip the corpus scrape; run only the index update + site publish'
+        type: boolean
+        default: false
 
 permissions:
   contents: write   # push updated generation caches back to this repo after an index update
@@ -34,12 +41,13 @@ concurrency:
 
 jobs:
   refresh:
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
+    if: ${{ !inputs.index_only }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
           cache: pip
@@ -60,9 +68,8 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: python data/scrape/build_dataset.py --all --pull --push
 
-      # Restart the live site so it re-syncs the freshened corpus from HF on boot. The /cache volume
-      # makes this incremental. Runs only when the dataset actually changed (new chunks were pushed),
-      # and is skipped gracefully if the Railway secrets aren't configured.
+      # Restart the live site so it re-syncs the freshened corpus from HF on boot. Skipped gracefully
+      # if the Railway secrets aren't configured (the index job's weekly web push redeploys anyway).
       - name: Redeploy the live site (Railway)
         if: success() && steps.refresh.outputs.pushed == 'true'
         env:
@@ -76,11 +83,32 @@ jobs:
           npm install -g @railway/cli
           railway redeploy --service "$RAILWAY_SERVICE_ID" --yes
 
-      # --- live index: extend over newly-completed FOMC meetings -------------------------------
-      # Generates persona responses ONLY for completed meetings missing from the committed caches
-      # (a week with no new meeting does no OpenAI work), commits the caches back to this repo,
-      # then re-exports the website's pbi.json and pushes it to the web repo (Railway deploys it).
-      - name: Update index caches for newly-completed FOMC meetings
+  index:
+    needs: refresh
+    if: ${{ always() }}          # run even if the scrape failed, timed out, or was skipped
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Response embeddings are content-hashed on disk; reusing them across runs keeps the weekly
+      # re-export from re-embedding every cached persona answer.
+      - name: Restore embedding cache
+        uses: actions/cache@v4
+        with:
+          path: .cache/embeddings
+          key: embeddings-${{ github.run_id }}
+          restore-keys: embeddings-
+
+      - name: Update index caches and forecast the next meeting
         id: index
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -88,16 +116,19 @@ jobs:
         run: python scripts/update_index.py
 
       - name: Commit updated index caches
-        if: steps.index.outputs.new_meetings == 'true'
+        if: steps.index.outputs.changed == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .cache/fred paper/.cache/retrieval_cv/beta0.0_tau2.0_pit paper/.cache/figure_index_pit
-          git commit -m "index update: generation caches for newly-completed FOMC meeting(s)" || exit 0
+          git add .cache/fred paper/.cache/retrieval_cv/beta0.0_tau2.0_pit paper/.cache/figure_index_pit \
+                  paper/.cache/cut_battery_b0.6 paper/.cache/hike_battery_b0.6 paper/.cache/vote_parse \
+                  paper/.cache/live_forecast
+          git commit -m "index update: weekly forecast and/or newly-completed FOMC meeting(s)" || exit 0
+          git pull --rebase
           git push
 
       - name: Export and publish the site index
-        if: steps.index.outputs.new_meetings == 'true'
+        if: steps.index.outputs.changed == 'true'
         env:
           WEB_PUSH_TOKEN: ${{ secrets.WEB_PUSH_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -113,5 +144,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/pbi.json
-          git commit -m "index: add newly-completed FOMC meeting(s)" || exit 0
+          git commit -m "index: weekly update (next-meeting forecast and/or new meeting)" || exit 0
           git push

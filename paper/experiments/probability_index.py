@@ -54,18 +54,24 @@ def load_support():
     for d in macro.FOMC_MEETINGS:
         if dec[d]["bps"] is None:
             continue
-        row = {}
-        for direction in ("hike", "cut"):
-            p = PARSE_CACHE / f"{direction}_{d}.json"
-            if not p.exists():
-                continue
-            for m, qs in json.loads(p.read_text()).items():
-                clear = [v for v in qs.values() if v != "unclear"]
-                if clear:
-                    row.setdefault(m, {})[direction] = float(np.mean([v == "support" for v in clear]))
+        row = member_support({direction: PARSE_CACHE / f"{direction}_{d}.json"
+                              for direction in ("hike", "cut")})
         if row:
-            sup[d] = {m: (v.get("hike", np.nan), v.get("cut", np.nan)) for m, v in row.items()}
+            sup[d] = row
     return sup, dec
+
+
+def member_support(parse_paths):
+    """{member: (s_hike, s_cut)} from parse files {"hike": path, "cut": path} (missing ok)."""
+    row = {}
+    for direction, p in parse_paths.items():
+        if not Path(p).exists():
+            continue
+        for m, qs in json.loads(Path(p).read_text()).items():
+            clear = [v for v in qs.values() if v != "unclear"]
+            if clear:
+                row.setdefault(m, {})[direction] = float(np.mean([v == "support" for v in clear]))
+    return {m: (v.get("hike", np.nan), v.get("cut", np.nan)) for m, v in row.items()}
 
 
 def anomaly_series(sup, dates):
@@ -170,6 +176,25 @@ def build():
     P, lams = forecast(y, st, fmat)
     return {"dates": dates, "y": y, "bps": bps, "sha": sha, "sca": sca,
             "streak": st, "P": P, "lams": lams, "dec": dec}
+
+
+def build_with_pending(pending_date, pending_support):
+    """build() plus one not-yet-decided meeting appended at the end.
+
+    The pending meeting's forecast uses only history before it (the hazard prior reads y[:i],
+    lambda is tuned on t < i, member baselines on earlier meetings), so the placeholder outcome
+    appended for it never enters its own forecast."""
+    sup, dec = load_support()
+    dates = sorted(sup)
+    sup = dict(sup)
+    sup[pending_date] = pending_support
+    all_dates = dates + [pending_date]
+    sha, sca = anomaly_series(sup, all_dates)
+    y = np.array([int(np.sign(dec[d]["bps"])) for d in dates] + [0])
+    fmat = np.stack([sca, np.zeros_like(sha), sha], axis=1)
+    st = streaks(y)
+    P, lams = forecast(y, st, fmat)
+    return {"dates": all_dates, "y": y, "sha": sha, "sca": sca, "P": P, "lams": lams, "dec": dec}
 
 
 def main():
