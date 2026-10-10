@@ -260,10 +260,26 @@ BANK_CONFIGS = {
     'venable_msgs': {'listing': 'https://www.atlantafed.org/news-and-events/messages-from-president',
                      'link_re': r'/news-and-events/messages-from-president/\d{4}/\d{2}/\d{2}/[\w\-]+',
                      'date_re': r'/(\d{4})/(\d{2})/(\d{2})/'},
-    # St. Louis refuses connections from some networks (see README); remarks pages + PDFs.
-    'musalem':  {'listing': 'https://www.stlouisfed.org/from-the-president/remarks',
-                 'link_re': r'/from-the-president/remarks/\d{4}/[\w\-]+',
+    # Daly: the listing pages back with /page/N/; URLs carry /YYYY/MM/ only, so dates come from the page.
+    'daly':     {'listing': 'https://www.frbsf.org/news-and-media/speeches/mary-c-daly/',
+                 'paginate': 'https://www.frbsf.org/news-and-media/speeches/mary-c-daly/page/{n}/',
+                 'link_re': r'/news-and-media/speeches/mary-c-daly/\d{4}/\d{2}/[\w\-]+/',
                  'date_re': None},
+    # Barkin: one listing page per year; the speech id carries the date.
+    'barkin':   {'listing': 'https://www.richmondfed.org/press_room/speeches/thomas_i_barkin',
+                 'year_listing': 'https://www.richmondfed.org/press_room/speeches/thomas_i_barkin/{y}',
+                 'first_year': 2018,
+                 'link_re': r'/press_room/speeches/thomas_i_barkin/\d{4}/barkin_speech_\d{8}',
+                 'date_re': r'barkin_speech_(\d{4})(\d{2})(\d{2})'},
+    # Kashkari: speeches (and Q&As) via the site sitemap; essays via his page (recent only).
+    'kashkari': {'sitemap': 'https://www.minneapolisfed.org/sitemap.xml',
+                 'link_re': r'https://(?:www\.)?minneapolisfed\.org/speeches/20(?:1[6-9]|2\d)/[a-z0-9\-]+',
+                 'date_re': None, 'min_chars': 1500},
+    'kashkari_essays': {'sitemap': 'https://www.minneapolisfed.org/sitemap.xml',
+                        'link_re': r'https://(?:www\.)?minneapolisfed\.org/article/20(?:1[6-9]|2\d)/[a-z0-9\-]+',
+                        'date_re': None, 'min_chars': 1500,
+                        'byline_re': r'Authors?\b.{0,200}?Neel Kashkari'},
+    # St. Louis (Musalem) refuses automated access: read via wayback_scraper.py instead.
     # Chicago's listing is Akamai/JS-gated, but the sitemap exposes every speech URL
     # and the pages fetch via curl (requests gets TLS-fingerprinted). 2023+ = Goolsbee era.
     'goolsbee': {'sitemap': 'https://www.chicagofed.org/sitemap.xml',
@@ -323,6 +339,21 @@ def _date_from_url(href: str, date_re: Optional[str]) -> Optional[pd.Timestamp]:
         return pd.Timestamp(f"{y}-{g[1]}-{g[2]}")
     except Exception:
         return None
+
+
+def _meta_date(html: str) -> Optional[pd.Timestamp]:
+    """Publish date from page metadata (more reliable than visible text on some bank sites)."""
+    for pat in (r'name="ess:publishdatetime" content="([^"]+)"',
+                r'property="article:published_time" content="([^"]+)"',
+                r'"datePublished"\s*:\s*"([^"]+)"'):
+        m = re.search(pat, html)
+        if m:
+            try:
+                return pd.Timestamp(m.group(1)).tz_localize(None) if pd.Timestamp(m.group(1)).tzinfo \
+                    else pd.Timestamp(m.group(1))
+            except Exception:
+                continue
+    return None
 
 
 def _page_date(text: str) -> Optional[pd.Timestamp]:
@@ -390,18 +421,29 @@ def _collect_via_sitemap(fed_speaker_name: str, bank: str, cfg: dict,
         d = _date_from_url(url, cfg.get('date_re'))
         if d is not None and start_dt is not None and d < start_dt:
             continue
+        y = re.search(r'/(20\d{2})/', url)
+        if y and start_dt is not None and int(y.group(1)) < start_dt.year:
+            continue                                   # cheap prefilter before fetching
         html = _curl(url)
+        if not html and "://www." not in url:          # sitemaps may list bare-domain URLs that
+            url = url.replace("://", "://www.", 1)     # only serve content on www.
+            html = _curl(url)
         if not html:
             continue
         text = _bs4_text(html)
         if d is None:
-            d = _page_date(text)
-        if d is not None and start_dt is not None and d < start_dt:
+            d = _meta_date(html) or _page_date(text)
+        if d is None:
+            continue                                   # undated: unusable under point-in-time rules
+        if start_dt is not None and d < start_dt:
             continue
-        if last not in text.lower()[:1500]:
+        if cfg.get('byline_re'):
+            if not re.search(cfg['byline_re'], text[:600]):
+                continue                               # mentions the member but is not authored by them
+        elif last not in text.lower()[:1500]:
             continue
-        if len(text) < 400:
-            continue
+        if len(text) < cfg.get('min_chars', 400):
+            continue                                   # e.g. video-only event pages
         title = ''
         try:
             t = BeautifulSoup(html, 'html.parser').title
@@ -451,14 +493,39 @@ def run_bank_speeches(fed_speaker_name: str, bank: str,
         with sync_playwright() as p:
             b = p.chromium.launch(headless=True, args=["--disable-http2"])
             page = b.new_page(user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36")
-            page.goto(cfg['listing'], wait_until="domcontentloaded", timeout=45000)
-            page.wait_for_timeout(3500)
-            hrefs = page.eval_on_selector_all("a", "els=>els.map(e=>e.getAttribute('href')).filter(Boolean)")
+            # Listing pages: the base listing, optional per-year pages ('year_listing', a template with
+            # {y}), and optional pagination ('paginate', a template with {n}; stops at the first page
+            # that adds no new links).
+            listings = [cfg['listing']]
+            if cfg.get('year_listing'):
+                y0 = start_dt.year if start_dt is not None else cfg.get('first_year', 2016)
+                listings += [cfg['year_listing'].format(y=y)
+                             for y in range(y0, datetime.date.today().year + 1)]
             links = []
             seen = set()
-            for h in hrefs:
-                if link_re.search(h) and h not in seen:
-                    seen.add(h); links.append(h)
+
+            def _harvest(url):
+                page.goto(url, wait_until="domcontentloaded", timeout=45000)
+                page.wait_for_timeout(3500)
+                hrefs = page.eval_on_selector_all("a", "els=>els.map(e=>e.getAttribute('href')).filter(Boolean)")
+                new = 0
+                for h in hrefs:
+                    if link_re.search(h) and h not in seen:
+                        seen.add(h); links.append(h); new += 1
+                return new
+
+            for url in listings:
+                try:
+                    _harvest(url)
+                except Exception as ex:
+                    print(f"   ⚠️  listing failed {url}: {ex}")
+            if cfg.get('paginate'):
+                for n in range(2, 40):
+                    try:
+                        if _harvest(cfg['paginate'].format(n=n)) == 0:
+                            break
+                    except Exception:
+                        break
             print(f"   {len(links)} candidate speech links")
 
             for h in links:

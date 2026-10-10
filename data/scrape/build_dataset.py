@@ -48,6 +48,7 @@ from fed_reserve_scraper import run_fed_reserve_scraper
 from fed_bank_scraper import run_fed_president_speeches, run_bank_speeches
 from fomc_transcript_scraper import run_fomc_transcript_scraper
 from fomc_pressconf_scraper import run_fomc_presconf_scraper
+from wayback_scraper import run_wayback_speeches
 
 HF_REPO = os.environ.get("FOMC_HF_REPO", "helivan/fomc-personas")
 
@@ -62,8 +63,13 @@ BANK_KEY = {
     "Lorie K. Logan": ["logan"], "Susan M. Collins": ["collins"],
     "Austan D. Goolsbee": ["goolsbee"], "Beth M. Hammack": ["hammack"],
     "Jeffrey R. Schmid": ["schmid"], "Anna Paulson": ["paulson"],
-    "Cheryl Venable": ["venable_msgs", "venable"], "Alberto G. Musalem": ["musalem"],
+    "Cheryl Venable": ["venable_msgs", "venable"],
+    "Mary C. Daly": ["daly"], "Thomas I. Barkin": ["barkin"],
+    "Neel Kashkari": ["kashkari", "kashkari_essays"],
 }
+# Presidents whose bank site refuses automated access are read from the Internet Archive's copies
+# of that site (data/scrape/wayback_scraper.py); citations still point at the original URLs.
+WAYBACK_KEY = {"Alberto G. Musalem": "musalem"}
 # BIS is only used where it is the speech channel. Calling it for everyone cost ~8 min per president
 # per week (it pages 40 index pages before giving up) and found nothing for anyone else.
 BIS_MEMBERS = {"John C. Williams"}
@@ -100,6 +106,8 @@ def scrape_member(member, start_date=None):
             records.update(run_fed_president_speeches(member, start_date))     # BIS
         for key in BANK_KEY.get(member, []):
             records.update(run_bank_speeches(member, key, start_date))
+        if member in WAYBACK_KEY:
+            records.update(run_wayback_speeches(member, WAYBACK_KEY[member], start_date))
     return records
 
 
