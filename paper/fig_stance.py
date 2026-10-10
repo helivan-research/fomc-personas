@@ -47,12 +47,15 @@ STANCE_GROUPS = {
 }
 
 
-def cached_respond(df, members, queries, bios, k, tag):
+GEN_B = "ministral-8b-2410"     # generator-robustness model (Mistral API; now served as ministral-8b-latest)
+
+
+def cached_respond(df, members, queries, bios, k, tag, model=None):
     p = CACHE / f"resp_{tag}.json"
     if p.exists():
         return json.loads(p.read_text())
     print(f"  generating responses ({tag}: {len(members)}x{len(queries)} @ k={k}) ...")
-    out = fp.respond(df, members, queries, bios, k=k)
+    out = fp.respond(df, members, queries, bios, k=k, **({"model": model} if model else {}))
     p.write_text(json.dumps(out))
     return out
 
@@ -94,6 +97,18 @@ def main():
         else:
             ret_tau.append(tau_of(fp.meanpool_retrieved(df, queries, k)))
 
+    # --- appendix: generator robustness -- the persona ordering under a second model family ---
+    resp_b = cached_respond(df, allmem, queries, bios, 3, "curated_k3_ministral", model=GEN_B)
+    sa = fp.project(fp.meanpool_generated(resp3), u)
+    sb = fp.project(fp.meanpool_generated(resp_b), u)
+    order_a = sorted(allmem, key=lambda n: -sa[n])
+    order_b = sorted(allmem, key=lambda n: -sb[n])
+    ra = {n: i for i, n in enumerate(order_a)}
+    rb = {n: i for i, n in enumerate(order_b)}
+    from scipy.stats import kendalltau
+    gen_tau = float(kendalltau([ra[n] for n in allmem], [rb[n] for n in allmem]).correlation)
+    _plot_generator([ra[n] for n in allmem], [rb[n] for n in allmem], gen_tau, len(allmem))
+
     # --- (e) query-set size within the curated 30 (persona, k=3) ---
     proj = {n: fp.embed([r or " " for r in resp3[n]]) @ u for n in members}
     mq = min(len(resp3[n]) for n in members)
@@ -125,6 +140,20 @@ def main():
     _plot(len(members), [ext_rank[m] for m in members], rankrank, ks, corpus_tau, ret_tau, per_tau,
           qcount, mq, gmean)
     print(f"wrote {FIG/'fig_stance.pdf'}  (corpus tau={corpus_tau:.2f}, persona k=3 tau={per_tau[3]:.2f})")
+
+
+def _plot_generator(rank_a, rank_b, tau, n):
+    """Appendix: persona-based member orderings (k=3) under gpt-4o-mini vs ministral-8b."""
+    fig, ax = plt.subplots(figsize=(2.5, 2.3))
+    ax.plot([0, n - 1], [0, n - 1], ls="--", color="0.6", lw=0.8, zorder=0)
+    ax.scatter(rank_a, rank_b, s=20, color="#4C72B0", edgecolor="k", lw=.25, zorder=2)
+    ax.text(0.05, 0.95, f"$\\tau{{=}}{tau:.2f}$", transform=ax.transAxes, fontsize=8, va="top")
+    ax.set_xlabel("gpt-4o-mini rank", fontsize=8); ax.set_ylabel("ministral-8b rank", fontsize=8)
+    ax.set_xticks([0, n - 1]); ax.set_xticklabels(["hawk", "dove"], fontsize=7)
+    ax.set_yticks([0, n - 1]); ax.set_yticklabels(["hawk", "dove"], fontsize=7)
+    ax.tick_params(length=2); ax.set_aspect("equal", adjustable="box")
+    fig.tight_layout(); fig.savefig(FIG / "fig_generator.pdf", bbox_inches="tight"); plt.close(fig)
+    print(f"wrote {FIG/'fig_generator.pdf'}  (n={n}, tau={tau:.2f})")
 
 
 def _plot(nmem, ext_ranks, rankrank, ks, corpus_tau, ret_tau, per_tau, qcount, nq, gmean):

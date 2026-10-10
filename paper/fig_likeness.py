@@ -23,6 +23,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import fomc_personas as fp
 
 KS = (0, 1, 2, 3, 4, 5)
+# Likeness needs a held-out test set (N_TEST quotes) AND a retrieval pool left after it, so members
+# with fewer than 2 * N_TEST chunks are excluded from this figure (they remain in the index).
+MIN_CHUNKS = 2 * fp.likeness.N_TEST
 CACHE = Path(__file__).resolve().parent / ".cache" / "figure_likeness"
 CACHE.mkdir(parents=True, exist_ok=True)
 RESP_DIRS = [CACHE, Path(__file__).resolve().parent / ".cache" / "figure_stance"]
@@ -55,6 +58,11 @@ def _completions(pool, test, bios, k):
 
 def main():
     df = fp.load_chunks(embeddings="cached")
+    counts = df["member"].value_counts()
+    excluded = sorted(counts[counts < MIN_CHUNKS].index)
+    if excluded:
+        print(f"likeness: excluding members with < {MIN_CHUNKS} chunks: {excluded}")
+    df = df[~df["member"].isin(excluded)].reset_index(drop=True)
     bios = fp.load_bios()
     queries = fp.load_queries("curated")
     allmem = sorted(df["member"].unique())
@@ -75,9 +83,12 @@ def main():
     # identifiability (uniqueness) across k
     uniq = {}
     members_u = None
+    confusion = None
     for k in KS:
-        members_u, recall, _ = fp.likeness.loqo_recall(_responses(df, allmem, queries, bios, k))
+        members_u, recall, conf = fp.likeness.loqo_recall(_responses(df, allmem, queries, bios, k))
         uniq[str(k)] = recall
+        if k == 3:
+            confusion = conf
     u3 = uniq["3"]
     hi_u, lo_u = max(u3, key=u3.get), min(u3, key=u3.get)
     s_hi, r_hi = fp.likeness.nway_scores(_responses(df, allmem, queries, bios, 3), hi_u)
@@ -98,9 +109,31 @@ def main():
          "uniqueness": {"chance": 1.0 / len(members_u), "ks": list(KS), "per_member": uniq,
                         "example": uniq_example, "corpus_size": corpus_rel}}
     _plot(L)
+    _plot_confusion(members_u, confusion)
     print(f"wrote {FIG/'fig_likeness.pdf'}  (identifiability recall@3 mean="
           f"{np.mean(list(u3.values())):.2f}, detectability tau@3 median="
           f"{np.median(list(detect['3'].values())):.2f}, floor={floor:.2f})")
+
+
+def _plot_confusion(members, M):
+    """Appendix: identifiability attribution confusion at k=3, row-normalized (diagonal = recall).
+    Member ids follow the roster table's seniority order (fomc_personas.roles.MEMBERS)."""
+    M = np.asarray(M, float)
+    Mr = M / M.sum(1, keepdims=True).clip(min=1)
+    mid = {m: i + 1 for i, m in enumerate(fp.roles.MEMBERS)}
+    order = sorted(range(len(members)), key=lambda j: mid.get(members[j], 99))
+    Mr = Mr[np.ix_(order, order)]
+    labels = [mid.get(members[j], "?") for j in order]
+    fig, ax = plt.subplots(figsize=(3.6, 2.85))
+    im = ax.imshow(Mr, cmap="Blues", vmin=0, vmax=0.6, aspect="equal")
+    ax.grid(False)
+    ax.set_xticks(range(len(labels))); ax.set_xticklabels(labels, fontsize=6)
+    ax.set_yticks(range(len(labels))); ax.set_yticklabels(labels, fontsize=6)
+    ax.set_xlabel("predicted member id", fontsize=8); ax.set_ylabel("true member id", fontsize=8)
+    cb = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.03)
+    cb.ax.tick_params(labelsize=6); cb.set_label("row fraction", fontsize=7)
+    fig.tight_layout(); fig.savefig(FIG / "fig_confusion.pdf"); plt.close(fig)
+    print(f"wrote {FIG/'fig_confusion.pdf'}  ({len(members)} members)")
 
 
 def _example_hist(a, d, sk, rk, color, slabel, rlabel, tag):

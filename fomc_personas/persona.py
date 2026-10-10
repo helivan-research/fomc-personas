@@ -23,6 +23,24 @@ def _openai():
     return _client
 
 
+_mistral_client = None
+MISTRAL_BASE_URL = "https://api.mistral.ai/v1"   # OpenAI-compatible chat completions
+
+
+def _client_for(model: str):
+    """OpenAI client for OpenAI models; the same client type pointed at Mistral's OpenAI-compatible
+    endpoint for Mistral models (used for the generator-robustness check)."""
+    global _mistral_client
+    if model.startswith(("ministral", "mistral", "open-mistral", "codestral")):
+        if _mistral_client is None:
+            import os
+            from openai import OpenAI
+            _mistral_client = OpenAI(base_url=MISTRAL_BASE_URL, api_key=os.environ["MISTRAL_API_KEY"],
+                                     max_retries=8)
+        return _mistral_client
+    return _openai()
+
+
 # --- retrieval ---------------------------------------------------------------
 
 def retrieve(member_df, q_emb, k: int = 3):
@@ -83,7 +101,7 @@ def _clean(text: str) -> str:
 
 def generate(messages, model: str = GEN_MODEL, max_tokens: int = 90, workers: int = 12):
     """Run a list of chat-message lists through the model concurrently; returns cleaned strings."""
-    client = _openai()
+    client = _client_for(model)
 
     def run(m):
         try:
