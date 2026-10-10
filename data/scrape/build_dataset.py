@@ -111,6 +111,41 @@ def scrape_member(member, start_date=None):
     return records
 
 
+def repair_undated(data_dir):
+    """Date chunks that were stored without a postedAt, from their source page's publish metadata.
+
+    Undated chunks are invisible to the point-in-time backtest (an unknown date is never "public"),
+    so they are lost data rather than leakage. Each distinct postUrl is fetched once; the as-of-date
+    role tags (is_voting / is_chair) are recomputed for the repaired rows. Idempotent: a run with
+    nothing undated does no fetching. Returns the number of chunks repaired."""
+    from fed_bank_scraper import _curl, _bs4_text, page_date
+    repaired = 0
+    for cpath in sorted((data_dir / "chunks").glob("*.parquet")):
+        df = pd.read_parquet(cpath)
+        miss = df["postedAt"].isna() & df["postUrl"].astype(str).str.startswith("http")
+        if not miss.any():
+            continue
+        member = df["member"].dropna().iloc[0]
+        changed = 0
+        for url in df.loc[miss, "postUrl"].unique():
+            html = _curl(url)
+            if not html and "://www." not in url:
+                html = _curl(url.replace("://", "://www.", 1))
+            d = page_date(html, _bs4_text(html), url) if html else None
+            if d is None:
+                continue
+            rows = miss & (df["postUrl"] == url)
+            df.loc[rows, "postedAt"] = pd.Timestamp(d).tz_localize(None) if pd.Timestamp(d).tzinfo else pd.Timestamp(d)
+            df.loc[rows, "is_voting"] = bool(roles.is_voting(member, d))
+            df.loc[rows, "is_chair"] = bool(roles.is_chair(member, d))
+            changed += int(rows.sum())
+        if changed:
+            _coerce_schema(df).to_parquet(cpath, index=False)
+            print(f"  {member}: dated {changed} previously undated chunks")
+            repaired += changed
+    return repaired
+
+
 def _next_chunk_id(data_dir):
     """One past the global maximum chunk_id across all chunk shards (ids are global, not per-shard)."""
     mx = -1
@@ -234,10 +269,13 @@ def main():
         next_id, n = update_member(data_dir, m, next_id)
         total_new += n
     print(f"added {total_new} chunks; max chunk_id now {next_id - 1}")
+    repaired = repair_undated(data_dir)
+    if repaired:
+        print(f"repaired dates on {repaired} chunks")
 
     if args.push:
-        if total_new == 0:
-            print("no new chunks — skipping HF push")
+        if total_new == 0 and repaired == 0:
+            print("no new or repaired chunks — skipping HF push")
         else:
             print(f"pushing to {HF_REPO}")
             _push(data_dir)

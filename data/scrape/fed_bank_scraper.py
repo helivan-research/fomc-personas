@@ -350,6 +350,38 @@ def _meta_date(html: str) -> Optional[pd.Timestamp]:
     return None
 
 
+_SLUG_MON = {"jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6, "jul": 7, "aug": 8,
+             "sep": 9, "oct": 10, "nov": 11, "dec": 12}
+
+
+def _date_from_slug(url: str) -> Optional[pd.Timestamp]:
+    """Date from a '/YYYY/mon-dd-...' URL (e.g. chicagofed.org/publications/speeches/2025/feb-28-x)."""
+    m = re.search(r'/(20\d{2})/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*-(\d{1,2})-', url.lower())
+    if not m:
+        return None
+    try:
+        return pd.Timestamp(int(m.group(1)), _SLUG_MON[m.group(2)], int(m.group(3)))
+    except Exception:
+        return None
+
+
+def _last_updated(text: str) -> Optional[pd.Timestamp]:
+    """'Last Updated: MM/DD/YY' stamp some bank pages carry in place of a publish date."""
+    m = re.search(r'Last Updated:\s*(\d{1,2})/(\d{1,2})/(\d{2,4})', text[:400])
+    if not m:
+        return None
+    y = int(m.group(3)); y = y + 2000 if y < 100 else y
+    try:
+        return pd.Timestamp(y, int(m.group(1)), int(m.group(2)))
+    except Exception:
+        return None
+
+
+def page_date(html: str, text: str, url: str) -> Optional[pd.Timestamp]:
+    """Best available publish date: page metadata > URL slug > visible date > 'Last Updated' stamp."""
+    return _meta_date(html) or _date_from_slug(url) or _page_date(text) or _last_updated(text)
+
+
 def _page_date(text: str) -> Optional[pd.Timestamp]:
     m = _DATE_TEXT.search(text[:1500])
     if not m:
@@ -426,7 +458,7 @@ def _collect_via_sitemap(fed_speaker_name: str, bank: str, cfg: dict,
             continue
         text = _bs4_text(html)
         if d is None:
-            d = _meta_date(html) or _page_date(text)
+            d = page_date(html, text, url)
         if d is None:
             continue                                   # undated: unusable under point-in-time rules
         if start_dt is not None and d < start_dt:
@@ -530,6 +562,7 @@ def run_bank_speeches(fed_speaker_name: str, bank: str,
                 try:
                     page.goto(url, wait_until="domcontentloaded", timeout=40000)
                     page.wait_for_timeout(1500)
+                    html_now = page.content()
                     text = _main_text(page)
                     title = (page.title() or '').split('|')[0].strip()
                     if len(text) < 1500:  # abstract-only page -> fetch the full-text PDF
@@ -540,8 +573,10 @@ def run_bank_speeches(fed_speaker_name: str, bank: str,
                     print(f"   ⚠️  failed {url}: {ex}")
                     continue
                 if d is None:
-                    d = _page_date(text)
-                if d is not None and start_dt is not None and d < start_dt:
+                    d = page_date(html_now, text, url)
+                if d is None:
+                    continue              # undated: unusable under point-in-time rules
+                if start_dt is not None and d < start_dt:
                     continue
                 # filter to this president (listings may include other speakers)
                 if last not in text.lower()[:1200] and last not in title.lower():
