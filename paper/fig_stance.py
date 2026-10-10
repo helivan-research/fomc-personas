@@ -48,6 +48,7 @@ STANCE_GROUPS = {
 
 
 GEN_B = "ministral-8b-2410"     # generator-robustness model (Mistral API; now served as ministral-8b-latest)
+N_RUNS, N_RUNS_B = 5, 3        # independent generation runs (gpt-4o-mini, ministral)
 
 
 def cached_respond(df, members, queries, bios, k, tag, model=None):
@@ -73,11 +74,26 @@ def main():
     def tau_of(rep):
         return fp.kendall_vs_external(fp.project(rep, u), ext)[1]
 
+    # Persona answers are sampled (temperature 0.2), and with 16 scored members one swapped pair moves
+    # tau by ~0.017: single generation runs vary by about +-0.1. Every persona number is therefore
+    # computed from N_RUNS independent runs -- the headline from the POOLED representation (each
+    # member averaged over all runs), with the per-run spread reported alongside.
+    def runs(k, model=None, n=N_RUNS, base="curated"):
+        tag = (lambda r: f"{base}_k{k}" + ("" if r == 0 else f"_r{r}")) if model is None else \
+              (lambda r: f"{base}_k{k}_ministral" + ("" if r == 0 else f"_r{r}"))
+        return [cached_respond(df, allmem, queries, bios, k, tag(r), model=model) for r in range(n)]
+
+    def pooled(resps):
+        reps = [fp.meanpool_generated(r) for r in resps]
+        return {m: np.mean([rep[m] for rep in reps], axis=0) for m in reps[0]}
+
     # --- row 1: rank-rank at k=3 ---
-    resp3 = cached_respond(df, allmem, queries, bios, 3, "curated_k3")
+    resp3_runs = runs(3)
+    resp3 = resp3_runs[0]
+    persona3 = pooled(resp3_runs)
     reps = [("retrieval-based", fp.meanpool_retrieved(df, queries, 3)),
             ("corpus average", fp.meanpool_corpus(df)),
-            ("persona-based", fp.meanpool_generated(resp3))]
+            ("persona-based", persona3)]
     rankrank = []
     for name, rep in reps:
         score = fp.project(rep, u)
@@ -85,22 +101,27 @@ def main():
         rr = {n: i for i, n in enumerate(order)}
         rankrank.append((name, [rr[m] for m in members], tau_of(rep)))
 
-    # --- (d) tau vs retrieval depth k ---
+    # --- (d) tau vs retrieval depth k: pooled tau, and the per-run spread ---
     ks = list(range(6))
     corpus_tau = tau_of(fp.meanpool_corpus(df))
-    ret_tau, per_tau = [], []
+    ret_tau, per_tau, per_sd = [], [], []
+    run_taus = {}
     for k in ks:
-        resp_k = resp3 if k == 3 else cached_respond(df, allmem, queries, bios, k, f"curated_k{k}")
-        per_tau.append(tau_of(fp.meanpool_generated(resp_k)))
+        rk = resp3_runs if k == 3 else runs(k)
+        taus = [tau_of(fp.meanpool_generated(r)) for r in rk]
+        run_taus[k] = taus
+        per_tau.append(tau_of(pooled(rk)))
+        per_sd.append(float(np.std(taus)))
         if k == 0:
             ret_tau.append(tau_of({n: fp.embed([bios[n]])[0] for n in allmem}))
         else:
             ret_tau.append(tau_of(fp.meanpool_retrieved(df, queries, k)))
+    print("persona tau per run (k=3):", [round(t, 3) for t in run_taus[3]],
+          f"mean {np.mean(run_taus[3]):.3f} sd {np.std(run_taus[3]):.3f} | pooled {per_tau[3]:.3f}")
 
-    # --- appendix: generator robustness -- the persona ordering under a second model family ---
-    resp_b = cached_respond(df, allmem, queries, bios, 3, "curated_k3_ministral", model=GEN_B)
-    sa = fp.project(fp.meanpool_generated(resp3), u)
-    sb = fp.project(fp.meanpool_generated(resp_b), u)
+    # --- appendix: generator robustness -- pooled orderings under two model families ---
+    sa = fp.project(persona3, u)
+    sb = fp.project(pooled(runs(3, model=GEN_B, n=N_RUNS_B)), u)
     order_a = sorted(allmem, key=lambda n: -sa[n])
     order_b = sorted(allmem, key=lambda n: -sb[n])
     ra = {n: i for i, n in enumerate(order_a)}
@@ -110,7 +131,8 @@ def main():
     _plot_generator([ra[n] for n in allmem], [rb[n] for n in allmem], gen_tau, len(allmem))
 
     # --- (e) query-set size within the curated 30 (persona, k=3) ---
-    proj = {n: fp.embed([r or " " for r in resp3[n]]) @ u for n in members}
+    proj = {n: np.mean([fp.embed([r or " " for r in rr[n]]) @ u for rr in resp3_runs], axis=0)
+            for n in members}
     mq = min(len(resp3[n]) for n in members)
     rng = default_rng(0)
 
@@ -138,8 +160,9 @@ def main():
     gmean = {g: float(np.mean(v)) for g, v in grp.items() if v}
 
     _plot(len(members), [ext_rank[m] for m in members], rankrank, ks, corpus_tau, ret_tau, per_tau,
-          qcount, mq, gmean)
-    print(f"wrote {FIG/'fig_stance.pdf'}  (corpus tau={corpus_tau:.2f}, persona k=3 tau={per_tau[3]:.2f})")
+          qcount, mq, gmean, per_sd=per_sd)
+    print(f"wrote {FIG/'fig_stance.pdf'}  (corpus tau={corpus_tau:.2f}, persona k=3 pooled tau={per_tau[3]:.2f}"
+          f" +- {per_sd[3]:.2f} per-run sd over {N_RUNS} runs)")
 
 
 def _plot_generator(rank_a, rank_b, tau, n):
@@ -156,7 +179,7 @@ def _plot_generator(rank_a, rank_b, tau, n):
     print(f"wrote {FIG/'fig_generator.pdf'}  (n={n}, tau={tau:.2f})")
 
 
-def _plot(nmem, ext_ranks, rankrank, ks, corpus_tau, ret_tau, per_tau, qcount, nq, gmean):
+def _plot(nmem, ext_ranks, rankrank, ks, corpus_tau, ret_tau, per_tau, qcount, nq, gmean, per_sd=None):
     blue, orange, grey = "#4C72B0", "#DD8452", "0.55"
     fig = plt.figure(figsize=(7.2, 3.4))
     gs = fig.add_gridspec(2, 3, hspace=0.5, wspace=0.34, height_ratios=[1.3, 1])
@@ -179,7 +202,10 @@ def _plot(nmem, ext_ranks, rankrank, ks, corpus_tau, ret_tau, per_tau, qcount, n
     ad = fig.add_subplot(gs[1, 0])
     ad.axhline(corpus_tau, ls="--", color=grey, lw=1.0, label="corpus average")
     ad.plot(ks, ret_tau, "-o", color=orange, ms=3, lw=1.1, label="retrieval-based")
-    ad.plot(ks, per_tau, "-o", color=blue, ms=3, lw=1.1, label="persona-based")
+    ad.plot(ks, per_tau, "-o", color=blue, ms=3, lw=1.1, label="persona-based (pooled runs)")
+    if per_sd is not None:
+        pt, sd = np.array(per_tau), np.array(per_sd)
+        ad.fill_between(ks, pt - sd, pt + sd, color=blue, alpha=0.15, lw=0)
     ad.set_xlabel("retrieval depth $k$", fontsize=7); ad.set_ylabel(r"Kendall $\tau$", fontsize=7)
     ad.set_title("(d) recovery vs. retrieval depth", fontsize=7); ad.set_ylim(0, 0.75)
     ad.tick_params(labelsize=6); ad.legend(fontsize=5, frameon=False, loc="lower center")

@@ -39,7 +39,8 @@ def _responses(df, members, queries, bios, k):
     for d in RESP_DIRS:
         p = d / f"resp_curated_k{k}.json"
         if p.exists():
-            return json.loads(p.read_text())
+            cached = json.loads(p.read_text())
+            return {m: cached[m] for m in members if m in cached}   # the shared cache may hold more
     print(f"  generating identifiability responses (k={k}) ...")
     out = fp.respond(df, members, queries, bios, k=k)
     (CACHE / f"resp_curated_k{k}.json").write_text(json.dumps(out))
