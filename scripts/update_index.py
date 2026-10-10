@@ -70,19 +70,23 @@ def main() -> None:
     series = macro.load_fred()
     live = macro.completed_live_meetings(series, today=today)
     print("completed live meetings:", live)
+    # --backfill: fill gaps for EVERY meeting (paper window + live), not just live ones -- used after
+    # a corpus change to regenerate all caches (see paper/regenerate.sh).
+    backfill = "--backfill" in sys.argv
+    scope = list(macro.FOMC_MEETINGS) + live if backfill else live
 
     def _missing_hawkdove():
         miss = set()
-        for d in live:
+        for d in scope:
             if not (BETA_DIR / f"resp_{d}.json").exists():
                 miss.add(d)
-            for tag in (f"resp_{d}_cond", f"resp_{d}_noc", f"vote_{d}"):
+            for tag in (f"resp_{d}_noc", f"vote_{d}"):
                 if not (F.CACHE / f"{tag}.json").exists():
                     miss.add(d)
         return sorted(miss)
 
     def _missing_votes():
-        return sorted({d for d in live for direction in ("cut", "hike")
+        return sorted({d for d in scope for direction in ("cut", "hike")
                        if not (V.PARSE_CACHE / f"{direction}_{d}.json").exists()})
 
     nxt = next_meeting(live, today)
@@ -102,7 +106,6 @@ def main() -> None:
         if missing_hd:
             u = fp.axis(fp.load_anchors())
             R.index_series(df, dec, bios, u, 0.0, 2.0)          # -> beta0.0_tau2.0_pit (site chart)
-            F._index_series(df, dec, bios, u, condition=True)   # -> figure_index_pit resp_*_cond
             F._index_series(df, dec, bios, u, condition=False)  # -> figure_index_pit resp_*_noc
             F._direct_vote(df, dec, bios)                       # -> figure_index_pit vote_*
 
