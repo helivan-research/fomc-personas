@@ -24,7 +24,11 @@ from fomc_personas import macro                   # noqa: E402
 import retrieval_cv as CV                         # noqa: E402  (robust client, PIT index_series)
 import fig_index as F                             # noqa: E402
 
-SETTINGS = [(0.0, 2.0), (0.3, 2.0), (0.6, 2.0), (0.6, 4.0), (1.2, 2.0)]   # 0.6/2.0 already cached
+# Betas may be passed on the command line (tau fixed at 2.0): python cv_pit.py 0.1 0.2
+if len(sys.argv) > 1:
+    SETTINGS = [(float(b), 2.0) for b in sys.argv[1:]] + [(0.0, 2.0)]   # always include beta=0 anchor
+else:
+    SETTINGS = [(0.0, 2.0), (0.3, 2.0), (0.6, 2.0), (0.6, 4.0), (1.2, 2.0)]
 CUTOFF = "2023-10-01"                             # gpt-4o-mini knowledge cutoff
 
 
