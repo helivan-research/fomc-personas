@@ -141,8 +141,9 @@ jobs:
           git clone --depth 1 "https://x-access-token:${WEB_PUSH_TOKEN}@github.com/helivan-research/fomc-personas-web.git" ../fomc-personas-web
           cd ../fomc-personas-web
           python scripts/export_pbi.py
+          python scripts/export_details.py     # per-meeting drill-down (chart click-through)
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/pbi.json
+          git add data/pbi.json data/meetings data/queries.json
           git commit -m "index: weekly update (next-meeting forecast and/or new meeting)" || exit 0
           git push
