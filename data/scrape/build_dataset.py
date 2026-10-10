@@ -56,11 +56,17 @@ CHUNK_COLS = ["chunk_id", "member", "text", "topic", "quote", "stance", "handle"
               "source", "sourceId", "postUrl", "accessedAt", "probabilitySpeaker", "theme",
               "is_voting", "is_chair"]
 
-# Home-bank site keys for the optional per-bank speech scraper (BIS already covers presidents).
+# Home-bank speech sources per president (fed_bank_scraper.BANK_CONFIGS keys). Every president's
+# published speeches in the dataset come from their bank site except Williams, whose come from BIS.
 BANK_KEY = {
-    "Lorie K. Logan": "logan", "Susan M. Collins": "collins",
-    "Austan D. Goolsbee": "goolsbee", "Beth M. Hammack": "hammack",
+    "Lorie K. Logan": ["logan"], "Susan M. Collins": ["collins"],
+    "Austan D. Goolsbee": ["goolsbee"], "Beth M. Hammack": ["hammack"],
+    "Jeffrey R. Schmid": ["schmid"], "Anna Paulson": ["paulson"],
+    "Cheryl Venable": ["venable_msgs", "venable"], "Alberto G. Musalem": ["musalem"],
 }
+# BIS is only used where it is the speech channel. Calling it for everyone cost ~8 min per president
+# per week (it pages 40 index pages before giving up) and found nothing for anyone else.
+BIS_MEMBERS = {"John C. Williams"}
 
 
 def _shard(member):
@@ -90,9 +96,10 @@ def scrape_member(member, start_date=None):
     if office == "chair":
         records.update(run_fomc_presconf_scraper(member, start_date))
     if office and office.startswith("pres:"):
-        records.update(run_fed_president_speeches(member, start_date))         # BIS
-        if member in BANK_KEY:
-            records.update(run_bank_speeches(member, BANK_KEY[member], start_date))
+        if member in BIS_MEMBERS:
+            records.update(run_fed_president_speeches(member, start_date))     # BIS
+        for key in BANK_KEY.get(member, []):
+            records.update(run_bank_speeches(member, key, start_date))
     return records
 
 

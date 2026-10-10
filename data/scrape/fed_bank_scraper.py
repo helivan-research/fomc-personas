@@ -255,6 +255,15 @@ BANK_CONFIGS = {
     'venable':  {'listing': 'https://www.atlantafed.org/news-and-events/speeches',
                  'link_re': r'/news-and-events/speeches/\d{4}/[\w\-]+',
                  'date_re': None},
+    # Venable (interim Atlanta president from 2026-03-01) publishes her policy views as monthly
+    # essays rather than speeches.
+    'venable_msgs': {'listing': 'https://www.atlantafed.org/news-and-events/messages-from-president',
+                     'link_re': r'/news-and-events/messages-from-president/\d{4}/\d{2}/\d{2}/[\w\-]+',
+                     'date_re': r'/(\d{4})/(\d{2})/(\d{2})/'},
+    # St. Louis refuses connections from some networks (see README); remarks pages + PDFs.
+    'musalem':  {'listing': 'https://www.stlouisfed.org/from-the-president/remarks',
+                 'link_re': r'/from-the-president/remarks/\d{4}/[\w\-]+',
+                 'date_re': None},
     # Chicago's listing is Akamai/JS-gated, but the sitemap exposes every speech URL
     # and the pages fetch via curl (requests gets TLS-fingerprinted). 2023+ = Goolsbee era.
     'goolsbee': {'sitemap': 'https://www.chicagofed.org/sitemap.xml',

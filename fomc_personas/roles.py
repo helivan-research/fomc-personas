@@ -50,6 +50,8 @@ _OFFICE = {
     "Beth M. Hammack":      [(D(2024, 8, 21), "pres:Cleveland")],
     "Jeffrey R. Schmid":    [(D(2023, 8, 21), "pres:Kansas City")],
     "Anna Paulson":         [(D(2025, 7, 1), "pres:Philadelphia")],
+    "Alberto G. Musalem":   [(D(2024, 4, 2), "pres:St. Louis")],
+    "Cheryl Venable":       [(D(2026, 3, 1), "pres:Atlanta")],     # interim president
 }
 
 # Chair tenure intervals [start, end) (end None = open).
