@@ -88,8 +88,11 @@ def refresh_fred(y0=2025, y1=None):
 
 
 
-def _fred(series_id, start="2016-01-01", end="2025-12-31"):
+def _fred(series_id, start="2016-01-01", end=None):
     """Fetch a FRED series as a {date: float} dict via the public CSV endpoint."""
+    if end is None:
+        import datetime as _dt
+        end = _dt.date.today().isoformat()
     url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}&cosd={start}&coed={end}"
     raw = requests.get(url, timeout=40).text
     out = {}
@@ -103,8 +106,11 @@ def _fred(series_id, start="2016-01-01", end="2025-12-31"):
     return out
 
 
-def _fred_yearly(series_id, y0=2016, y1=2025):
+def _fred_yearly(series_id, y0=2016, y1=None):
     """Long daily ranges return empty from the CSV endpoint, so fetch year by year and merge."""
+    if y1 is None:
+        import datetime as _dt
+        y1 = _dt.date.today().year
     out = {}
     for y in range(y0, y1 + 1):
         out.update(_fred(series_id, f"{y}-01-01", f"{y}-12-31"))

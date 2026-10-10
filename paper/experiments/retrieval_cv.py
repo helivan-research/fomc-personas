@@ -1,24 +1,15 @@
-"""Cross-validate the retrieval function: how should recency trade off against relevance?
+"""Shared point-in-time generation utilities for the persona index.
 
-The index's personas answer a fixed battery with top-k retrieval over each member's prior statements.
-Baseline retrieval ranks purely by *relevance* (embedding dot product to the query). Here we add a
-*recency* term and search for the weighting that maximizes the index's out-of-sample decision-
-forecasting skill (the same walk-forward hike/hold/cut accuracy the paper reports).
+  retrieve_weighted  top-k chunks by standardized relevance + beta * standardized recency
+                     (score = z(rel) + beta * z(exp(-age / tau)); beta = 0 is pure relevance)
+  index_series       per-meeting committee index for one (beta, tau): generates (and caches under
+                     paper/.cache/retrieval_cv/beta{b}_tau{t}_pit/) each in-office persona's answers
+                     to the 15-question battery with the as-of-date briefing, point-in-time corpus
 
-For a member's candidate chunks dated <= meeting date t, with relevance r_i (dot product to the query)
-and age a_i (years before t), we score:
-
-    score_i = z(r_i) + beta * z( exp(-a_i / tau) )            # z = standardize within the candidate set
-
-and take the top-k. beta = 0 recovers pure relevance; larger beta tilts toward recent statements; tau
-(years) sets how fast "recent" decays. We run a FULL generation backtest per (beta, tau) -- new
-retrieval changes which quotes are shown, hence the generations -- and compare OOS accuracy. Each
-setting's generations are cached under paper/.cache/retrieval_cv/beta{b}_tau{t}/ so reruns are free.
-
-    OPENAI_API_KEY=sk-...  python paper/experiments/retrieval_cv.py 0.6 1.5        # betas, tau via --tau
-
-This is EXPENSIVE: each new (beta, tau) is a full per-meeting generation pass (~tens of thousands of
-gpt-4o-mini calls). beta=0 reuses the figure_index cache (free).
+The paper's hawk-dove index uses beta = 0 (pure relevance); the vote batteries use beta = 0.6 /
+tau = 2 yr. Imported by scripts/update_index.py, cv_pit.py, cut_battery.py, vote_battery.py and
+others. (This module originally also ran a pre-point-in-time beta grid; that analysis is superseded
+by cv_pit.py and was removed.)
 """
 from __future__ import annotations
 
@@ -133,53 +124,3 @@ def index_series(df, dec, bios, u, beta, tau):
         if pos:
             out[d] = {"index": float(np.mean(list(pos.values()))), "bps": dec[d]["bps"]}
     return out
-
-
-def _oos_acc(out):
-    dates = [d for d in macro.FOMC_MEETINGS if d in out]
-    idx = np.array([out[d]["index"] for d in dates])
-    bps = np.array([float(out[d]["bps"]) for d in dates])
-    y = np.sign(bps).astype(int)
-    m22 = np.array([d >= "2022" for d in dates])
-    pred = F._walkfwd([idx, F._mom(idx)], bps)
-    return F._acc(pred, y, m22)
-
-
-def main():
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    tau = float(next((a.split("=")[1] for a in sys.argv[1:] if a.startswith("--tau=")), 2.0))
-    betas = [float(a) for a in args] or [0.6, 1.5]
-
-    macro.FOMC_MEETINGS = list(macro.FOMC_MEETINGS) + macro.completed_live_meetings()
-    df = fp.load_chunks(embeddings="cached")
-    bios = fp.load_bios()
-    u = fp.axis(fp.load_anchors())
-    series = macro.load_fred()
-    dec = macro.decisions(series)
-
-    results = {}
-    # beta = 0 (pure relevance): reuse the existing figure_index conditioned cache -- free.
-    print("beta=0.0 (relevance only) from figure_index cache ...")
-    base = F._index_series(df, dec, bios, u, condition=True)
-    acc0 = _oos_acc({d: {"index": base[d]["index"], "bps": base[d]["bps"]} for d in base})
-    results["0.0"] = {"tau": None, "oos_acc": acc0, "n": len(base)}
-    print(f"  beta=0.0: OOS acc={acc0:.3f}  (n={len(base)})")
-
-    for beta in betas:
-        print(f"beta={beta} tau={tau} ...")
-        out = index_series(df, dec, bios, u, beta, tau)
-        acc = _oos_acc(out)
-        results[f"{beta}"] = {"tau": tau, "oos_acc": acc, "n": len(out)}
-        print(f"  beta={beta} tau={tau}: OOS acc={acc:.3f}  (n={len(out)})")
-        (CACHE / "results.json").write_text(json.dumps(results, indent=2))
-
-    best = max(results, key=lambda k: results[k]["oos_acc"])
-    print("\n=== retrieval CV (OOS 3-class decision accuracy) ===")
-    for b, r in sorted(results.items(), key=lambda kv: float(kv[0])):
-        star = "  <-- best" if b == best else ""
-        print(f"  beta={b:>4}  tau={r['tau']}  acc={r['oos_acc']:.3f}{star}")
-    (CACHE / "results.json").write_text(json.dumps(results, indent=2))
-
-
-if __name__ == "__main__":
-    main()

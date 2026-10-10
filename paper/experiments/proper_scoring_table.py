@@ -35,7 +35,7 @@ import fomc_personas as fp                                     # noqa: E402
 from fomc_personas import macro                                # noqa: E402
 import fig_index as F                                          # noqa: E402
 from probability_index import (CLS, START, build, forecast,    # noqa: E402
-                               hazard_prior, logloss, rps, streaks)
+                               hazard_prior, logloss, mom, rps, streaks, zwf)
 
 FI = ROOT / "paper" / ".cache" / "figure_index_pit"
 BETA = ROOT / "paper" / ".cache" / "retrieval_cv" / "beta0.0_tau2.0_pit"
@@ -46,12 +46,6 @@ def committee_proj(path, u):
     return float(fp.embed(texts).mean(0) @ u) if texts else np.nan
 
 
-def zwf(x):
-    out = np.zeros_like(x, dtype=float)
-    for i in range(len(x)):
-        h = x[:i]
-        out[i] = 0.0 if len(h) < 4 or np.std(h) < 1e-9 else (x[i] - np.mean(h)) / np.std(h)
-    return np.clip(out, -3, 3)
 
 
 def scalar_f(x):
@@ -108,7 +102,6 @@ def main():
     dates, y, sha, sca = b["dates"], b["y"], b["sha"], b["sca"]
     st = b["streak"]
     n = len(dates)
-    mom = lambda x: np.array([x[i] - np.mean(x[max(0, i - 3):i]) if i >= 1 else 0.0 for i in range(len(x))])
 
     series = macro.load_fred()
     dec = b["dec"]

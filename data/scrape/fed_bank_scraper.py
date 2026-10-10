@@ -243,17 +243,11 @@ BANK_CONFIGS = {
     'collins':  {'listing': 'https://www.bostonfed.org/news-and-events/speeches.aspx',
                  'link_re': r'/news-and-events/speeches/\d{4}/[\w%\.\-]+\.aspx',
                  'date_re': None},
-    'goolsbee': {'listing': 'https://www.chicagofed.org/publications/speeches',
-                 'link_re': r'/publications/speeches/\d{4}/[\w\-]+',
-                 'date_re': None},
     'schmid':   {'listing': 'https://www.kansascityfed.org/speeches/',
                  'link_re': r'/speeches/[a-z0-9][\w\-]+/',
                  'date_re': None},
-    'goolsbee': {'listing': 'https://www.chicagofed.org/publications/speeches',
-                 'link_re': r'/publications/speeches/\d{4}/[\w\-]+',
-                 'date_re': None},
     'venable':  {'listing': 'https://www.atlantafed.org/news-and-events/speeches',
-                 'link_re': r'/news-and-events/speeches/\d{4}/[\w\-]+',
+                 'link_re': r'/news-and-events/speeches/\d{4}/\d{2}/\d{2}/[\w\-]+',
                  'date_re': None},
     # Venable (interim Atlanta president from 2026-03-01) publishes her policy views as monthly
     # essays rather than speeches.

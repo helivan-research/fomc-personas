@@ -3,21 +3,20 @@
 (a) PBI vs the fed funds target over 2018-2025; (b) PBI by realized decision (2022-25);
 (c) walk-forward OOS decision accuracy vs baselines (+ accuracy at decision changes, where the
 persistence baseline scores 0 by construction); (d) lead-lag -- Kendall tau of the PBI with the
-target LEVEL as the index is slid forward (tau 0.38 contemporaneous -> ~0.79 at +9 meetings),
+target LEVEL as the index is slid forward,
 against two mechanical controls (raw CPI; the no-briefing static index), both of which it exceeds.
 
 At each meeting the in-office roster's personas answer a fixed 15-question battery, prepended with an
 as-of-date macro briefing c^(t). Retrieval is POINT-IN-TIME (see _public_asof: embargoed FOMC
-transcripts are dated at their ~5-year release, strict day-before cutoff) and recency-weighted
-(relevance + beta*recency, exp(-age/tau); beta=0.6, tau=2yr from paper/experiments/retrieval_cv.py).
-Honesty notes: (beta, tau) was selected on the same 2022+ eval window the paper reports, so treat the
-cut-discrimination gain vs pure relevance as in-sample-selected; and the walk-forward accuracy (0.66)
-sits below the persistence baseline (0.78) on this hold-heavy window -- persistence is blind at
-turning points, which is where the index carries its value.
+transcripts are dated at their ~5-year release, strict day-before cutoff) and ranks by pure relevance
+(beta = 0; recency tilts were a leakage artifact under the pre-point-in-time corpus -- see
+paper/experiments/cv_pit.py). The walk-forward accuracy sits below the persistence baseline on this
+hold-heavy window; the probabilistic comparison under proper scoring is in
+paper/experiments/proper_scoring_table.py.
 
 Projected stances are averaged into the committee index. Generations are cached under
-paper/.cache/retrieval_cv/beta{b}_tau{t}_pit/ (built by retrieval_cv.py) and the ablations under
-paper/.cache/figure_index_pit/. With those caches present the figure plots in seconds, no paid calls.
+paper/.cache/retrieval_cv/beta0.0_tau2.0_pit/ (built by retrieval_cv.index_series) and the ablations
+under paper/.cache/figure_index_pit/. With those caches present the figure plots in seconds.
 
     OPENAI_API_KEY=sk-...  python paper/fig_index.py
 """
@@ -48,7 +47,7 @@ MIN_OPINIONS, TOPK = 5, 3
 RED, BLUE, GREY = "#C44E52", "#4C72B0", "#999999"
 
 # The PBI uses PURE-RELEVANCE retrieval (beta=0). Under the point-in-time corpus the recency tilts
-# explored by experiments/retrieval_cv.py no longer help -- they were an artifact of the transcript
+# explored by experiments/cv_pit.py no longer help -- they were an artifact of the transcript
 # leak (recency up-weighted exactly the embargoed material). beta=0 is the no-knob default, best on
 # the eval window AND on the post-LLM-cutoff validation split (see .cache/retrieval_cv/
 # sensitivity_pit.json, built by experiments/cv_pit.py).
@@ -121,9 +120,7 @@ def _index_series(df, dec, bios, u, condition):
 
 
 def _pbi_series(dec, u):
-    """Per-meeting committee index from the CV-tuned recency-weighted generations (cached, no calls).
-    Same structure as _index_series(condition=True) but reads .cache/retrieval_cv/beta{b}_tau{t}/, so
-    the PBI uses relevance + beta*recency retrieval instead of pure relevance."""
+    """Per-meeting committee index from the cached point-in-time generations in BETA_DIR (no calls)."""
     out = {}
     for d in macro.FOMC_MEETINGS:
         if dec[d]["bps"] is None:
@@ -253,11 +250,11 @@ def main():
     series = macro.load_fred()
     dec = macro.decisions(series)
 
-    print(f"PBI backtest (conditioned, recency-weighted beta={RETRIEVAL_BETA} tau={RETRIEVAL_TAU}) ...")
+    print(f"PBI backtest (conditioned, point-in-time, beta={RETRIEVAL_BETA}) ...")
     if BETA_DIR.exists():
         pbi = _pbi_series(dec, u)
     else:                                             # no tuned cache -> generate pure-relevance PBI
-        print(f"  ! {BETA_DIR} missing; run paper/experiments/retrieval_cv.py. Falling back to relevance.")
+        print(f"  ! {BETA_DIR} missing; generating it (pure relevance) via _index_series.")
         pbi = _index_series(df, dec, bios, u, condition=True)
     print("static query set (no c^(t)) ...")
     noc = _index_series(df, dec, bios, u, condition=False)

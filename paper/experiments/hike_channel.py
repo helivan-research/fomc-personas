@@ -38,22 +38,15 @@ except ImportError:
 import fomc_personas as fp                                    # noqa: E402
 from fomc_personas import macro                               # noqa: E402
 import probability_index as PI                                # noqa: E402
+from probability_index import zwf, mom                        # noqa: E402
 
 BETA = ROOT / "paper" / ".cache" / "retrieval_cv" / "beta0.0_tau2.0_pit"
 GRID = (0.0, 1.0, 2.0, 4.0, 8.0)
 CLS = PI.CLS
 
 
-def zwf(x):
-    out = np.zeros_like(x, dtype=float)
-    for i in range(len(x)):
-        h = x[:i]
-        out[i] = 0.0 if len(h) < 4 or np.std(h) < 1e-9 else (x[i] - np.mean(h)) / np.std(h)
-    return np.clip(out, -3, 3)
 
 
-def mom(x):
-    return np.array([x[i] - np.mean(x[max(0, i - 3):i]) if i >= 1 else 0.0 for i in range(len(x))])
 
 
 def forecast_multi(y, streak, channels, n_weights, start=PI.START):

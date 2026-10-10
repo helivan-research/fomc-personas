@@ -97,6 +97,21 @@ def anomaly_series(sup, dates):
     return np.array(sha), np.array(sca)
 
 
+def zwf(x):
+    """Walk-forward z-score: each value standardized by the mean/std of the values BEFORE it
+    (0 until 4 observations), clipped to [-3, 3]."""
+    out = np.zeros_like(x, dtype=float)
+    for i in range(len(x)):
+        h = x[:i]
+        out[i] = 0.0 if len(h) < 4 or np.std(h) < 1e-9 else (x[i] - np.mean(h)) / np.std(h)
+    return np.clip(out, -3, 3)
+
+
+def mom(x):
+    """3-meeting momentum: value minus the mean of the previous (up to) three values."""
+    return np.array([x[i] - np.mean(x[max(0, i - 3):i]) if i >= 1 else 0.0 for i in range(len(x))])
+
+
 def streaks(y):
     s = np.zeros(len(y), int)
     for i in range(1, len(y)):

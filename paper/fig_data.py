@@ -31,7 +31,7 @@ def main():
     bysrc = df["source"].value_counts()
     by_id = df["member"].map(member_id).value_counts()
     years = pd.to_datetime(df["postedAt"], errors="coerce", utc=True).dt.year.dropna()
-    years = Counter(int(y) for y in years if 2006 <= y <= 2026)
+    years = Counter(int(y) for y in years if 2006 <= y <= pd.Timestamp.today().year)
     themes = df["theme"].value_counts()
 
     fig, ax = plt.subplots(2, 2, figsize=(3.4, 2.95))

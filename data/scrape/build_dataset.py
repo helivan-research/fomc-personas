@@ -136,8 +136,18 @@ def update_member(data_dir, member, next_id):
 
     # Keep only well-formed record dicts (a scraper that fails returns {'error': ...}, whose value
     # is a string) and drop documents already seen.
+    # Nothing dated before the member took office is attributed to them (guards shared listings,
+    # e.g. a bank's essay page that also carries a predecessor's essays).
+    tenure_start = pd.Timestamp(roles._OFFICE[member][0][0]) if member in roles._OFFICE else None
+
+    def _in_tenure(v):
+        if tenure_start is None:
+            return True
+        d = pd.to_datetime(v.get("postedAt"), errors="coerce", utc=True)
+        return pd.isna(d) or d.tz_localize(None) >= tenure_start
+
     records = {k: v for k, v in scrape_member(member, start_date).items()
-               if isinstance(v, dict) and v.get("postUrl") not in seen}
+               if isinstance(v, dict) and v.get("postUrl") not in seen and _in_tenure(v)}
     if not records:
         print(f"  {member}: no new documents since {start_date or 'inception'}")
         return next_id, 0
