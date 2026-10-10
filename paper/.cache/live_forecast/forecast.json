@@ -1,279 +1,279 @@
 {
  "meeting": "2026-10-28",
  "asof": "2026-10-10",
- "p_cut": 0.0649,
- "p_hold": 0.5675,
- "p_hike": 0.3676,
- "s_hike": 0.7118,
- "s_cut": 0.3529,
- "n_members": 17,
+ "p_cut": 0.0414,
+ "p_hold": 0.5221,
+ "p_hike": 0.4365,
+ "s_hike": 0.7816,
+ "s_cut": 0.2184,
+ "n_members": 19,
  "last_decision": "2026-09-16",
  "history": [
   {
    "date": "2022-01-26",
    "label": "hold",
-   "p_cut": 0.0217,
-   "p_hold": 0.7999,
-   "p_hike": 0.1784
+   "p_cut": 0.0246,
+   "p_hold": 0.8237,
+   "p_hike": 0.1517
   },
   {
    "date": "2022-03-16",
    "label": "hike",
-   "p_cut": 0.0187,
-   "p_hold": 0.8241,
-   "p_hike": 0.1573
+   "p_cut": 0.0212,
+   "p_hold": 0.8471,
+   "p_hike": 0.1318
   },
   {
    "date": "2022-05-04",
    "label": "hike",
-   "p_cut": 0.0454,
-   "p_hold": 0.5849,
-   "p_hike": 0.3697
+   "p_cut": 0.0328,
+   "p_hold": 0.4613,
+   "p_hike": 0.506
   },
   {
    "date": "2022-06-15",
    "label": "hike",
-   "p_cut": 0.0371,
-   "p_hold": 0.4821,
-   "p_hike": 0.4807
+   "p_cut": 0.0232,
+   "p_hold": 0.321,
+   "p_hike": 0.6557
   },
   {
    "date": "2022-07-27",
    "label": "hike",
-   "p_cut": 0.0181,
-   "p_hold": 0.2044,
-   "p_hike": 0.7774
+   "p_cut": 0.0167,
+   "p_hold": 0.2028,
+   "p_hike": 0.7805
   },
   {
    "date": "2022-09-21",
    "label": "hike",
-   "p_cut": 0.0058,
-   "p_hold": 0.1061,
-   "p_hike": 0.8881
+   "p_cut": 0.0079,
+   "p_hold": 0.123,
+   "p_hike": 0.8691
   },
   {
    "date": "2022-11-02",
    "label": "hike",
-   "p_cut": 0.0032,
-   "p_hold": 0.0608,
-   "p_hike": 0.9361
+   "p_cut": 0.004,
+   "p_hold": 0.0761,
+   "p_hike": 0.9199
   },
   {
    "date": "2022-12-14",
    "label": "hike",
-   "p_cut": 0.0078,
-   "p_hold": 0.1577,
-   "p_hike": 0.8345
+   "p_cut": 0.0111,
+   "p_hold": 0.18,
+   "p_hike": 0.8089
   },
   {
    "date": "2023-02-01",
    "label": "hike",
-   "p_cut": 0.0065,
-   "p_hold": 0.112,
-   "p_hike": 0.8816
+   "p_cut": 0.0059,
+   "p_hold": 0.1106,
+   "p_hike": 0.8835
   },
   {
    "date": "2023-03-22",
    "label": "hike",
-   "p_cut": 0.0078,
-   "p_hold": 0.1121,
-   "p_hike": 0.8801
+   "p_cut": 0.0076,
+   "p_hold": 0.1125,
+   "p_hike": 0.8798
   },
   {
    "date": "2023-05-03",
    "label": "hike",
-   "p_cut": 0.0091,
-   "p_hold": 0.1243,
-   "p_hike": 0.8667
+   "p_cut": 0.0085,
+   "p_hold": 0.1185,
+   "p_hike": 0.8729
   },
   {
    "date": "2023-06-14",
    "label": "hold",
-   "p_cut": 0.0081,
-   "p_hold": 0.1097,
-   "p_hike": 0.8823
+   "p_cut": 0.0061,
+   "p_hold": 0.084,
+   "p_hike": 0.9099
   },
   {
    "date": "2023-07-26",
    "label": "hike",
-   "p_cut": 0.1002,
-   "p_hold": 0.4554,
-   "p_hike": 0.4444
+   "p_cut": 0.0938,
+   "p_hold": 0.4305,
+   "p_hike": 0.4756
   },
   {
    "date": "2023-09-20",
    "label": "hold",
-   "p_cut": 0.0317,
-   "p_hold": 0.5185,
-   "p_hike": 0.4498
+   "p_cut": 0.0359,
+   "p_hold": 0.5605,
+   "p_hike": 0.4036
   },
   {
    "date": "2023-11-01",
    "label": "hold",
-   "p_cut": 0.1149,
-   "p_hold": 0.4958,
-   "p_hike": 0.3893
+   "p_cut": 0.1131,
+   "p_hold": 0.4896,
+   "p_hike": 0.3973
   },
   {
    "date": "2023-12-13",
    "label": "hold",
-   "p_cut": 0.0975,
-   "p_hold": 0.4873,
-   "p_hike": 0.4152
+   "p_cut": 0.0926,
+   "p_hold": 0.4629,
+   "p_hike": 0.4445
   },
   {
    "date": "2024-01-31",
    "label": "hold",
-   "p_cut": 0.0452,
-   "p_hold": 0.5855,
-   "p_hike": 0.3693
+   "p_cut": 0.0579,
+   "p_hold": 0.6742,
+   "p_hike": 0.2679
   },
   {
    "date": "2024-03-20",
    "label": "hold",
-   "p_cut": 0.0994,
-   "p_hold": 0.7455,
-   "p_hike": 0.1551
+   "p_cut": 0.1218,
+   "p_hold": 0.7839,
+   "p_hike": 0.0942
   },
   {
    "date": "2024-05-01",
    "label": "hold",
-   "p_cut": 0.0792,
-   "p_hold": 0.8254,
-   "p_hike": 0.0954
+   "p_cut": 0.0788,
+   "p_hold": 0.8522,
+   "p_hike": 0.069
   },
   {
    "date": "2024-06-12",
    "label": "hold",
-   "p_cut": 0.0493,
-   "p_hold": 0.8963,
-   "p_hike": 0.0543
+   "p_cut": 0.049,
+   "p_hold": 0.8948,
+   "p_hike": 0.0562
   },
   {
    "date": "2024-07-31",
    "label": "hold",
-   "p_cut": 0.0635,
-   "p_hold": 0.8881,
-   "p_hike": 0.0484
+   "p_cut": 0.0525,
+   "p_hold": 0.8828,
+   "p_hike": 0.0647
   },
   {
    "date": "2024-09-18",
    "label": "cut",
-   "p_cut": 0.0746,
-   "p_hold": 0.8723,
-   "p_hike": 0.0531
+   "p_cut": 0.0584,
+   "p_hold": 0.8816,
+   "p_hike": 0.0599
   },
   {
    "date": "2024-11-07",
    "label": "cut",
-   "p_cut": 0.7797,
-   "p_hold": 0.1995,
-   "p_hike": 0.0208
+   "p_cut": 0.8565,
+   "p_hold": 0.1325,
+   "p_hike": 0.011
   },
   {
    "date": "2024-12-18",
    "label": "cut",
-   "p_cut": 0.8444,
-   "p_hold": 0.1421,
-   "p_hike": 0.0135
+   "p_cut": 0.9051,
+   "p_hold": 0.0876,
+   "p_hike": 0.0073
   },
   {
    "date": "2025-01-29",
    "label": "hold",
-   "p_cut": 0.7126,
-   "p_hold": 0.2713,
-   "p_hike": 0.0161
+   "p_cut": 0.7154,
+   "p_hold": 0.2707,
+   "p_hike": 0.014
   },
   {
    "date": "2025-03-19",
    "label": "hold",
-   "p_cut": 0.3902,
-   "p_hold": 0.4782,
-   "p_hike": 0.1316
+   "p_cut": 0.4033,
+   "p_hold": 0.4521,
+   "p_hike": 0.1446
   },
   {
    "date": "2025-05-07",
    "label": "hold",
-   "p_cut": 0.3567,
-   "p_hold": 0.5408,
-   "p_hike": 0.1025
+   "p_cut": 0.287,
+   "p_hold": 0.5447,
+   "p_hike": 0.1683
   },
   {
    "date": "2025-06-18",
    "label": "hold",
-   "p_cut": 0.1359,
-   "p_hold": 0.7715,
-   "p_hike": 0.0926
+   "p_cut": 0.1107,
+   "p_hold": 0.7862,
+   "p_hike": 0.1032
   },
   {
    "date": "2025-07-30",
    "label": "hold",
-   "p_cut": 0.145,
-   "p_hold": 0.8042,
-   "p_hike": 0.0508
+   "p_cut": 0.118,
+   "p_hold": 0.8156,
+   "p_hike": 0.0664
   },
   {
    "date": "2025-09-17",
    "label": "cut",
-   "p_cut": 0.1337,
-   "p_hold": 0.8388,
-   "p_hike": 0.0275
+   "p_cut": 0.1153,
+   "p_hold": 0.8504,
+   "p_hike": 0.0343
   },
   {
    "date": "2025-10-29",
    "label": "cut",
-   "p_cut": 0.8912,
-   "p_hold": 0.1021,
-   "p_hike": 0.0066
+   "p_cut": 0.8797,
+   "p_hold": 0.112,
+   "p_hike": 0.0083
   },
   {
    "date": "2025-12-10",
    "label": "cut",
-   "p_cut": 0.863,
-   "p_hold": 0.1223,
-   "p_hike": 0.0148
+   "p_cut": 0.8683,
+   "p_hold": 0.1145,
+   "p_hike": 0.0172
   },
   {
    "date": "2026-01-28",
    "label": "hold",
-   "p_cut": 0.3401,
-   "p_hold": 0.5935,
-   "p_hike": 0.0664
+   "p_cut": 0.3974,
+   "p_hold": 0.5454,
+   "p_hike": 0.0572
   },
   {
    "date": "2026-03-18",
    "label": "hold",
-   "p_cut": 0.3507,
-   "p_hold": 0.5531,
-   "p_hike": 0.0962
+   "p_cut": 0.3449,
+   "p_hold": 0.5714,
+   "p_hike": 0.0838
   },
   {
    "date": "2026-04-29",
    "label": "hold",
-   "p_cut": 0.3441,
-   "p_hold": 0.5197,
-   "p_hike": 0.1362
+   "p_cut": 0.2805,
+   "p_hold": 0.5638,
+   "p_hike": 0.1557
   },
   {
    "date": "2026-06-17",
    "label": "hold",
-   "p_cut": 0.1229,
-   "p_hold": 0.7077,
-   "p_hike": 0.1694
+   "p_cut": 0.1253,
+   "p_hold": 0.7067,
+   "p_hike": 0.1679
   },
   {
    "date": "2026-07-29",
    "label": "hold",
-   "p_cut": 0.1229,
-   "p_hold": 0.7516,
-   "p_hike": 0.1255
+   "p_cut": 0.1017,
+   "p_hold": 0.7733,
+   "p_hike": 0.1249
   },
   {
    "date": "2026-09-16",
    "label": "hike",
-   "p_cut": 0.11,
-   "p_hold": 0.7338,
-   "p_hike": 0.1562
+   "p_cut": 0.0837,
+   "p_hold": 0.7163,
+   "p_hike": 0.2
   }
  ]
 }

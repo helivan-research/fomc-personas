@@ -68,10 +68,10 @@ def _public_asof(df, d):
         retrievable when "predicting" that decision.
     Recency *ages* still use postedAt (when the words were said); only availability changes.
     """
-    ts = pd.to_datetime(df["postedAt"], errors="coerce")
+    ts = pd.to_datetime(df["postedAt"], errors="coerce").astype("datetime64[ns]")
     avail = ts.copy()
     tr = (df["source"] == "fomc_transcript").values
-    avail[tr] = pd.to_datetime((ts[tr].dt.year + 6).astype(str) + "-01-15")
+    avail[tr] = pd.to_datetime((ts[tr].dt.year + 6).astype(str) + "-01-15").astype("datetime64[ns]")
     return df[avail < pd.Timestamp(d)]
 
 

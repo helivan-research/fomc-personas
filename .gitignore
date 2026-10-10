@@ -241,6 +241,7 @@ paper/.cache/retrieval_cv/*
 !paper/.cache/answer_audit/
 !paper/.cache/live_forecast/
 !paper/.cache/history/
+!paper/.cache/DATASET_REVISION
 # Working copy of the HF dataset used by data/scrape/build_dataset.py (--pull/--push).
 data/.hf_dataset/
 # Scraper intermediates (raw scraped JSON + BIS slug cache); regenerated, never committed.
