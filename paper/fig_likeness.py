@@ -47,11 +47,14 @@ def _responses(df, members, queries, bios, k):
     return out
 
 
-def _completions(pool, test, bios, k):
-    p = CACHE / f"completions_k{k}.json"
+N_RUNS_DET = 3   # independent completion runs; detectability averaged per member over runs
+
+
+def _completions(pool, test, bios, k, r=0):
+    p = CACHE / (f"completions_k{k}.json" if r == 0 else f"completions_k{k}_r{r}.json")
     if p.exists():
         return json.loads(p.read_text())
-    print(f"  generating seeded completions (k={k}) ...")
+    print(f"  generating seeded completions (k={k}, run {r}) ...")
     comps = fp.likeness.complete_seeded(pool, test, bios, k)
     p.write_text(json.dumps(comps))
     return comps
@@ -72,7 +75,11 @@ def main():
     # detectability across k
     detect = {}
     for k in KS:
-        detect[str(k)] = fp.likeness.detect_taus(_completions(pool, test, bios, k))
+        per_run = [fp.likeness.detect_taus(_completions(pool, test, bios, k, r)) for r in range(N_RUNS_DET)]
+        detect[str(k)] = {m: float(np.mean([pr[m] for pr in per_run])) for m in per_run[0]}
+        if k == 3:
+            meds = [float(np.median(list(pr.values()))) for pr in per_run]
+            print(f"  detectability tau@3 median per run: {[round(x, 3) for x in meds]}")
     comps3, comps0 = _completions(pool, test, bios, 3), _completions(pool, test, bios, 0)
     _, fl = fp.likeness.detect_taus(comps3, with_floor=True)
     floor = float(np.median(list(fl.values())))

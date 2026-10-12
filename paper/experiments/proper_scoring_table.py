@@ -35,7 +35,8 @@ import fomc_personas as fp                                     # noqa: E402
 from fomc_personas import macro                                # noqa: E402
 import fig_index as F                                          # noqa: E402
 from probability_index import (CLS, START, build, forecast,    # noqa: E402
-                               hazard_prior, logloss, mom, rps, streaks, zwf)
+                               hazard_prior, logloss, mom, rps, streaks, zwf,
+                               history_context, with_history)
 
 FI = ROOT / "paper" / ".cache" / "figure_index_pit"
 BETA = ROOT / "paper" / ".cache" / "retrieval_cv" / "beta0.0_tau2.0_pit"
@@ -97,8 +98,24 @@ def persist_hedged(y, start=START):
     return P
 
 
+def _zero_cut_where(P, zlb):
+    P = P.copy()
+    for i in np.where(zlb & ~np.isnan(P[:, 0]))[0]:
+        P[i, 0] = 0.0
+        P[i] /= P[i].sum()
+    return P
+
+
+def _on_history(fn, y, zlb):
+    """Run a decision-history-only baseline over the prepended history; current window out."""
+    y_full, z_full, off = history_context(y, zlb)
+    return _zero_cut_where(fn(y_full, start=off + START), z_full)[off:]
+
+
 def main():
+    macro.FOMC_MEETINGS = list(macro.FOMC_MEETINGS) + macro.completed_live_meetings()   # full record
     b = build()
+    zlb = b["zlb"]
     dates, y, sha, sca = b["dates"], b["y"], b["sha"], b["sca"]
     st = b["streak"]
     n = len(dates)
@@ -134,31 +151,34 @@ def main():
     f_dv = np.stack([trailing_center(dv_c, 0.15), np.zeros(n), trailing_center(dv_h, 0.5)], axis=1)
 
     MODELS = {
-        "climatology":              climatology(y),
-        "persistence (hedged)":     persist_hedged(y),
-        "hazard prior only":        forecast(y, st, np.zeros((n, 3)))[0],
-        "Taylor logit":             wf_logit(np.column_stack([gap]), y),
-        "Taylor hazard+tilt":       forecast(y, st, scalar_f(gap))[0],
-        "macro logit":              wf_logit(np.column_stack([cpi, pce, un, cur, mom(cpi), mom(pce), mom(un)]), y),
-        "retrieved hazard+tilt":    forecast(y, st, scalar_f(ridx))[0],
-        "static hazard+tilt":       forecast(y, st, scalar_f(noc))[0],
-        "hawk-dove hazard+tilt":    forecast(y, st, scalar_f(xu))[0],
-        "direct-vote (ablation)":   forecast(y, st, f_dv)[0],
+        "climatology":              _on_history(climatology, y, zlb),
+        "persistence (hedged)":     _on_history(persist_hedged, y, zlb),
+        "hazard prior only":        with_history(y, np.zeros((n, 3)), zlb)[0],
+        "Taylor logit":             _zero_cut_where(wf_logit(np.column_stack([gap]), y), zlb),
+        "Taylor hazard+tilt":       with_history(y, scalar_f(gap), zlb)[0],
+        "macro logit":              _zero_cut_where(wf_logit(np.column_stack([cpi, pce, un, cur, mom(cpi), mom(pce), mom(un)]), y), zlb),
+        "retrieved hazard+tilt":    with_history(y, scalar_f(ridx), zlb)[0],
+        "static hazard+tilt":       with_history(y, scalar_f(noc), zlb)[0],
+        "hawk-dove hazard+tilt":    with_history(y, scalar_f(xu), zlb)[0],
+        "direct-vote (ablation)":   with_history(y, f_dv, zlb)[0],
         "PBI-vote (ours)":          b["P"],
     }
-    m22 = np.array([d >= "2022" for d in dates])
-    pre = m22 & np.array([d < "2024" for d in dates])      # in-training-window (cutoff late 2023)
-    post = np.array([d >= "2024" for d in dates])          # post-cutoff
+    full = np.array([d >= "2019" for d in dates])
+    m22 = np.array(["2022" <= d < "2026" for d in dates])
+    y26 = np.array([d >= "2026" for d in dates])
+    post = np.array([d >= "2024" for d in dates])          # after gpt-4o-mini's late-2023 cutoff
     chg = np.concatenate([[False], y[1:] != y[:-1]])
-    turns = np.array([d in ("2022-03-16", "2024-09-18", "2025-09-17") for d in dates])
+    turns = np.array([d in ("2022-03-16", "2024-09-18", "2025-09-17", "2026-09-16") for d in dates])
 
-    hdr = (f"{'model':<24} {'RPS':>6} {'logloss':>8} {'RPS@chg':>8} {'RPS@turn':>8} "
-           f"{'RPS pre-cut.':>12} {'RPS post-cut.':>13}")
-    print("\n" + hdr)
+    print(f"\n{len(dates)} meetings ({dates[0]} .. {dates[-1]}); decision history from 2006; "
+          f"zero-lower-bound rule for every model")
+    hdr = (f"{'model':<24} {'LL full':>8} {'RPS full':>8} {'LL 22-25':>8} {'RPS 22-25':>9} "
+           f"{'LL 2026':>8} {'RPS@chg':>8} {'RPS@turn':>8} {'RPS post-cut':>12}")
+    print(hdr)
     for name, P in MODELS.items():
-        print(f"{name:<24} {rps(P, y, m22):>6.3f} {logloss(P, y, m22):>8.3f} "
-              f"{rps(P, y, m22 & chg):>8.3f} {rps(P, y, m22 & turns):>8.3f} "
-              f"{rps(P, y, pre):>12.3f} {rps(P, y, post):>13.3f}")
+        print(f"{name:<24} {logloss(P, y, full):>8.3f} {rps(P, y, full):>8.3f} {logloss(P, y, m22):>8.3f} "
+              f"{rps(P, y, m22):>9.3f} {logloss(P, y, y26):>8.3f} {rps(P, y, full & chg):>8.3f} "
+              f"{rps(P, y, turns):>8.3f} {rps(P, y, post):>12.3f}")
 
 
 if __name__ == "__main__":

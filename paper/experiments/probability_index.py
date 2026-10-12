@@ -46,6 +46,61 @@ LAMBDA_GRID = (0.0, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0)
 PRIOR_HIKE, PRIOR_CUT, MIN_HIST = 0.5, 0.15, 3
 
 
+HISTORY_FROM = 2006      # decision history prepended to the hazard prior (experiment 13 / Phase 0)
+ZLB_CEILING = 0.25       # no cut when the target ceiling is at/below this (zero lower bound)
+HIST = ROOT / "paper" / ".cache" / "history"
+
+
+def history_events(start_year=HISTORY_FROM):
+    """Decisions before 2018 from the committed history cache (built by history_prior.py):
+    scheduled meetings labelled by the target change across the meeting, plus intermeeting moves.
+    Returns (signs, zlb_flags) in date order."""
+    import pandas as pd
+    if start_year is None:
+        return np.zeros(0, int), np.zeros(0, bool)
+    meetings = json.loads((HIST / "scheduled_1994_2017.json").read_text())
+    tgt = json.loads((HIST / "target_1993_2017.json").read_text())
+    meetings = [d for d in meetings if d >= f"{start_year}-01-01"]
+    keys = sorted(tgt)
+    ev = []
+    for d in meetings:
+        before = macro._asof(tgt, d)
+        after = macro._asof(tgt, (pd.Timestamp(d) + pd.Timedelta(days=8)).strftime("%Y-%m-%d"))
+        ev.append((d, int(np.sign(round((after - before) * 100))), before))
+    sched = [pd.Timestamp(d) for d in meetings]
+    for k_prev, k in zip(keys, keys[1:]):
+        if k < f"{start_year}-01-01" or tgt[k] == tgt[k_prev]:
+            continue
+        dk = pd.Timestamp(k)
+        if any(pd.Timedelta(0) <= dk - m <= pd.Timedelta(days=2) for m in sched):
+            continue
+        ev.append((k, int(np.sign(tgt[k] - tgt[k_prev])), tgt[k_prev]))
+    ev.sort()
+    return np.array([e[1] for e in ev], int), np.array([e[2] <= ZLB_CEILING for e in ev], bool)
+
+
+def zlb_flags(dates, series=None):
+    series = series or macro.load_fred()
+    return np.array([macro.macro_briefing(series, d)[0]["target_upper"] <= ZLB_CEILING for d in dates])
+
+
+def history_context(y_cur, zlb_cur, start_year=HISTORY_FROM):
+    """Prepend pre-2018 decision history. Returns (y_full, zlb_full, offset)."""
+    y_h, z_h = history_events(start_year)
+    return (np.concatenate([y_h, np.asarray(y_cur, int)]),
+            np.concatenate([z_h, np.asarray(zlb_cur, bool)]), len(y_h))
+
+
+def with_history(y_cur, fmat_cur, zlb_cur, start=START, lam_grid=None):
+    """The canonical forecast: hazard prior learned over the prepended history x persona tilt,
+    zero-lower-bound rule; returns (P for the current window, selected lambdas)."""
+    y, z, off = history_context(y_cur, zlb_cur)
+    F = np.concatenate([np.zeros((off, 3)), np.asarray(fmat_cur, float)])
+    P, lams = forecast(y, streaks(y), F, start=off + start, zlb=z,
+                       **({"lam_grid": lam_grid} if lam_grid is not None else {}))
+    return P[off:], lams
+
+
 def load_support():
     """{date: {member: (s_hike, s_cut)}} from the cached battery parses."""
     series = macro.load_fred()
@@ -148,19 +203,31 @@ def tilt(pr, lam, f):
     return q / q.sum()
 
 
-def forecast(y, streak, fmat, start=START, lam_grid=LAMBDA_GRID):
-    """Walk-forward hazard+tilt forecast; returns (P[n,3], selected lambdas)."""
+def _zero_cut(p):
+    q = p.copy()
+    q[0] = 0.0
+    return q / q.sum()
+
+
+def forecast(y, streak, fmat, start=START, lam_grid=LAMBDA_GRID, zlb=None):
+    """Walk-forward hazard+tilt forecast; returns (P[n,3], selected lambdas). With `zlb` (bool per
+    meeting), cut probability is zero at the lower bound, in fitting and in forecasting."""
     P = np.full((len(y), 3), np.nan)
     lams = []
+    pri = [hazard_prior(t, y, streak) if t >= 1 else None for t in range(len(y))]
+
+    def p_at(t, lam):
+        q = tilt(pri[t], lam, fmat[t])
+        return _zero_cut(q) if zlb is not None and zlb[t] else q
+
     for i in range(start, len(y)):
         best_lam, best_ll = 0.0, -1e18
         for lam in lam_grid:
-            ll = sum(np.log(tilt(hazard_prior(t, y, streak), lam, fmat[t])[CLS.index(y[t])] + 1e-12)
-                     for t in range(1, i))
+            ll = sum(np.log(p_at(t, lam)[CLS.index(y[t])] + 1e-12) for t in range(1, i))
             if ll > best_ll:
                 best_ll, best_lam = ll, lam
         lams.append(best_lam)
-        P[i] = tilt(hazard_prior(i, y, streak), best_lam, fmat[i])
+        P[i] = p_at(i, best_lam)
     return P, lams
 
 
@@ -188,9 +255,10 @@ def build():
     y = np.sign(bps).astype(int)
     fmat = np.stack([sca, np.zeros_like(sha), sha], axis=1)
     st = streaks(y)
-    P, lams = forecast(y, st, fmat)
+    zlb = zlb_flags(dates)
+    P, lams = with_history(y, fmat, zlb)
     return {"dates": dates, "y": y, "bps": bps, "sha": sha, "sca": sca,
-            "streak": st, "P": P, "lams": lams, "dec": dec}
+            "streak": st, "zlb": zlb, "P": P, "lams": lams, "dec": dec}
 
 
 def build_with_pending(pending_date, pending_support):
@@ -207,8 +275,8 @@ def build_with_pending(pending_date, pending_support):
     sha, sca = anomaly_series(sup, all_dates)
     y = np.array([int(np.sign(dec[d]["bps"])) for d in dates] + [0])
     fmat = np.stack([sca, np.zeros_like(sha), sha], axis=1)
-    st = streaks(y)
-    P, lams = forecast(y, st, fmat)
+    zlb = zlb_flags(all_dates)
+    P, lams = with_history(y, fmat, zlb)
     return {"dates": all_dates, "y": y, "sha": sha, "sca": sca, "P": P, "lams": lams, "dec": dec}
 
 
