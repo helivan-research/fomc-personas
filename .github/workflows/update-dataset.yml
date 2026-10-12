@@ -135,8 +135,9 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           if [ -z "$WEB_PUSH_TOKEN" ]; then
-            echo "WEB_PUSH_TOKEN not set — skipping site index publish."
-            exit 0
+            echo "::error::WEB_PUSH_TOKEN is not available to this workflow -- the site was NOT updated."
+            echo "Add it under fomc-personas -> Settings -> Secrets and variables -> Actions (repository secret)."
+            exit 1
           fi
           git clone --depth 1 "https://x-access-token:${WEB_PUSH_TOKEN}@github.com/helivan-research/fomc-personas-web.git" ../fomc-personas-web
           cd ../fomc-personas-web
